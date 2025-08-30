@@ -1,3 +1,4 @@
+
 import { openDB, DBSchema } from 'idb';
 
 interface JITDatabase extends DBSchema {
@@ -22,7 +23,7 @@ interface JITDatabase extends DBSchema {
   };
 }
 
-let db: ReturnType<typeof openDB<JITDatabase>> | null = null;
+let db: Promise<import('idb').IDBPDatabase<JITDatabase>> | null = null;
 
 async function getDB() {
   if (!db) {
@@ -41,11 +42,16 @@ async function getDB() {
 }
 
 export async function savePersonalDetails(markdown: string) {
-  const database = await getDB();
-  await database.put('personalDetails', {
-    id: 'single',
-    markdown,
-  });
+  try {
+    const database = await getDB();
+    await database.put('personalDetails', {
+      id: 'single',
+      markdown,
+    });
+  } catch (error) {
+    console.error('Error saving personal details:', error);
+    throw new Error('Failed to save personal details');
+  }
 }
 
 export async function getPersonalDetails(): Promise<string | null> {
@@ -53,7 +59,8 @@ export async function getPersonalDetails(): Promise<string | null> {
     const database = await getDB();
     const result = await database.get('personalDetails', 'single');
     return result?.markdown || null;
-  } catch {
+  } catch (error) {
+    console.error('Error getting personal details:', error);
     return null;
   }
 }
@@ -63,11 +70,16 @@ export async function saveResume(id: string, data: {
   jdRaw: string;
   derived: { skills: string[]; keywords: string[] };
 }) {
-  const database = await getDB();
-  await database.put('resumes', {
-    id,
-    ...data,
-  });
+  try {
+    const database = await getDB();
+    await database.put('resumes', {
+      id,
+      ...data,
+    });
+  } catch (error) {
+    console.error('Error saving resume:', error);
+    throw new Error('Failed to save resume');
+  }
 }
 
 export async function getResume(id: string) {
@@ -75,18 +87,29 @@ export async function getResume(id: string) {
     const database = await getDB();
     const result = await database.get('resumes', id);
     return result || null;
-  } catch {
+  } catch (error) {
+    console.error('Error getting resume:', error);
     return null;
   }
 }
 
 export async function deleteResumeFromDB(id: string) {
-  const database = await getDB();
-  await database.delete('resumes', id);
+  try {
+    const database = await getDB();
+    await database.delete('resumes', id);
+  } catch (error) {
+    console.error('Error deleting resume:', error);
+    throw new Error('Failed to delete resume');
+  }
 }
 
 export async function clearAllData() {
-  const database = await getDB();
-  await database.clear('personalDetails');
-  await database.clear('resumes');
+  try {
+    const database = await getDB();
+    await database.clear('personalDetails');
+    await database.clear('resumes');
+  } catch (error) {
+    console.error('Error clearing data:', error);
+    throw new Error('Failed to clear data');
+  }
 }

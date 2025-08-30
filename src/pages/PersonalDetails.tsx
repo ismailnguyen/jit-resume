@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,13 +79,17 @@ const PersonalDetails = () => {
 
   const loadPersonalDetails = async () => {
     try {
+      console.log('Loading personal details...');
       const data = await getPersonalDetails();
       if (data) {
+        console.log('Loaded personal details:', data.length, 'characters');
         setMarkdown(data);
       } else {
+        console.log('No personal details found, using template');
         setMarkdown(TEMPLATE_CONTENT);
       }
     } catch (error) {
+      console.error('Error loading personal details:', error);
       toast({
         title: "Error",
         description: "Failed to load personal details. Starting with template.",
@@ -99,6 +104,7 @@ const PersonalDetails = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      console.log('Saving personal details...', markdown.length, 'characters');
       await savePersonalDetails(markdown);
       
       const meta = {
@@ -107,15 +113,17 @@ const PersonalDetails = () => {
       };
       
       setPersonalMeta(meta);
+      console.log('Personal details saved successfully');
       
       toast({
         title: "Saved!",
         description: "Your personal details have been saved successfully.",
       });
     } catch (error) {
+      console.error('Error saving personal details:', error);
       toast({
         title: "Error",
-        description: "Failed to save personal details. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save personal details. Please try again.",
         variant: "destructive",
       });
     } finally {
