@@ -1,3 +1,17 @@
+export async function getAllResumes() {
+  try {
+    const database = await getDB();
+    const all = await database.getAll('resumes');
+    return all;
+  } catch (error) {
+    console.error('Error getting all resumes:', error);
+    return [];
+  }
+}
+
+export async function deleteResume(id: string) {
+  return deleteResumeFromDB(id);
+}
 
 import { openDB, DBSchema } from 'idb';
 
@@ -47,7 +61,7 @@ export async function savePersonalDetails(markdown: string) {
     await database.put('personalDetails', {
       id: 'single',
       markdown,
-    });
+    }, 'single');
   } catch (error) {
     console.error('Error saving personal details:', error);
     throw new Error('Failed to save personal details');
@@ -75,7 +89,7 @@ export async function saveResume(id: string, data: {
     await database.put('resumes', {
       id,
       ...data,
-    });
+    }, id);
   } catch (error) {
     console.error('Error saving resume:', error);
     throw new Error('Failed to save resume');

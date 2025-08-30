@@ -17,7 +17,7 @@ keywords from the JD naturally, and keep to 1–2 pages.
 RULES:
 - Output MUST be valid GitHub-flavored Markdown.
 - Sections in order: Header (Name, Contact, Links), Summary, Skills, Experience, Education, Certifications (if any), Projects/Volunteer (if relevant).
-- Emphasize outcomes with numbers (% improvements, time saved, revenue impact, scale).
+- Emphasize outcomes with numbers (% improvements, time saved, revenue impact, scale).  Every data should be based on the given input canonical résumé, nothing should be invented.
 - Mirror JD terminology where appropriate (synonyms ok).
 - Avoid tables, images, text boxes. No fancy formatting—ATS-safe.
 - Use simple typographic conventions: bold for employers/titles, dashes for dates.

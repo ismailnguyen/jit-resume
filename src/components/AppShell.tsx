@@ -16,14 +16,14 @@ const AppShell = () => {
   const location = useLocation();
 
   const navigation = [
-    { name: "Personal Details", href: "/app/personal", icon: User },
     { name: "New Resume", href: "/app/new", icon: Plus },
     { name: "Resume Library", href: "/app/library", icon: Library },
+    { name: "Personal Details", href: "/app/personal", icon: User },
     { name: "Settings", href: "/app/settings", icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+  <div className="min-h-screen bg-gradient-subtle lg:flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -34,8 +34,8 @@ const AppShell = () => {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 transform bg-card border-r shadow-large transition-transform lg:translate-x-0 lg:static lg:inset-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "w-72 flex-shrink-0 bg-card border-r shadow-large transition-transform lg:relative lg:z-0 lg:translate-x-0 lg:inset-0",
+        sidebarOpen ? "fixed inset-y-0 left-0 z-50 translate-x-0" : "fixed inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 lg:static"
       )}>
         <div className="flex h-full flex-col">
           {/* Logo */}
@@ -90,7 +90,7 @@ const AppShell = () => {
       </div>
 
       {/* Main content */}
-      <div className="lg:ml-72">
+  <div className="flex-1">
         {/* Top bar */}
         <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b">
           <div className="flex h-16 items-center justify-between px-6">

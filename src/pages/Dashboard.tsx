@@ -12,7 +12,7 @@ const Dashboard = () => {
   const resumeCount = resumesIndex.length;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+  <div className="p-6 w-full">
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
@@ -158,7 +158,6 @@ const Dashboard = () => {
                     <div>
                       <h3 className="font-medium">{resume.title}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {resume.companyGuess && `${resume.companyGuess} • `}
                         Created {new Date(resume.createdAt).toLocaleDateString()}
                       </p>
                     </div>

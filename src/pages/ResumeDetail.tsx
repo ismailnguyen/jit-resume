@@ -110,9 +110,29 @@ const ResumeDetail = () => {
   };
 
   const handlePrint = () => {
-    // For now, just open a basic print dialog
-    // TODO: Implement proper print layout route
-    window.print();
+    // Print only the resume content
+    const resumeContent = document.getElementById('resume-content');
+    if (!resumeContent) {
+      window.print();
+      return;
+    }
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Resume PDF</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; }
+          </style>
+        </head>
+        <body>${resumeContent.innerHTML}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   if (loading) {
@@ -147,7 +167,7 @@ const ResumeDetail = () => {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+  <div className="p-6 max-w-6xl mx-auto space-y-6" id="resume-content">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/app/library")}>

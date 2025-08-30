@@ -28,16 +28,9 @@ const LandingPage = () => {
               className="bg-gradient-hero hover:opacity-90 transition-smooth text-white border-0 shadow-glow text-lg px-8 py-6"
             >
               <Link to="/app">
-                Start Generating
+                Let's customize your résumé
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-primary/20 hover:bg-primary/5 transition-smooth text-lg px-8 py-6"
-            >
-              See How It Works
             </Button>
           </div>
 
@@ -78,26 +71,6 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="mt-20 p-8 bg-muted/50 rounded-3xl">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Trusted by professionals at
-              </p>
-              <div className="flex justify-center items-center gap-8 text-muted-foreground/60 font-medium">
-                <span>Google</span>
-                <span>•</span>
-                <span>Apple</span>
-                <span>•</span>
-                <span>Microsoft</span>
-                <span>•</span>
-                <span>Meta</span>
-                <span>•</span>
-                <span>Tesla</span>
-              </div>
-            </div>
           </div>
         </div>
       </main>
