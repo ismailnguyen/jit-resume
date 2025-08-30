@@ -8,6 +8,8 @@ import AppShell from "./components/AppShell";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import PersonalDetails from "./pages/PersonalDetails";
+import NewResume from "./pages/NewResume";
+import ResumeDetail from "./pages/ResumeDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,10 +25,10 @@ const App = () => (
           <Route path="/app" element={<AppShell />}>
             <Route index element={<Dashboard />} />
             <Route path="personal" element={<PersonalDetails />} />
-            <Route path="new" element={<div className="p-6">New Resume - Coming Soon</div>} />
+            <Route path="new" element={<NewResume />} />
             <Route path="library" element={<div className="p-6">Resume Library - Coming Soon</div>} />
             <Route path="settings" element={<Settings />} />
-            <Route path="resume/:id" element={<div className="p-6">Resume Detail - Coming Soon</div>} />
+            <Route path="resume/:id" element={<ResumeDetail />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
