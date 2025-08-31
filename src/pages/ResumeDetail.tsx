@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getResume, saveResume } from "@/lib/storage";
 import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marked } from 'marked';
 
 const ResumeDetail = () => {
@@ -22,6 +23,8 @@ const ResumeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  // Default to preview mode so users see the rendered résumé first
+  const [editorMode, setEditorMode] = useState<'preview' | 'edit'>('preview');
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
 
@@ -176,13 +179,6 @@ const ResumeDetail = () => {
           <div>
             <h1 className="text-2xl font-bold">{resumeMeta.title}</h1>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              {resumeMeta.companyGuess && (
-                <Badge variant="secondary">{resumeMeta.companyGuess}</Badge>
-              )}
-              {resumeMeta.jobTitleGuess && (
-                <Badge variant="outline">{resumeMeta.jobTitleGuess}</Badge>
-              )}
-              <span>•</span>
               <span>Created {new Date(resumeMeta.createdAt).toLocaleDateString()}</span>
               {resumeMeta.updatedAt !== resumeMeta.createdAt && (
                 <>
@@ -224,17 +220,27 @@ const ResumeDetail = () => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Resume Editor</CardTitle>
-            <CardDescription>
-              Edit your tailored resume. Changes are saved locally on your device.
-            </CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>Resume Editor</CardTitle>
+                <CardDescription>
+                  Edit your tailored resume. Changes are saved locally on your device.
+                </CardDescription>
+              </div>
+              <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as 'preview' | 'edit')}>
+                <TabsList>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                  <TabsTrigger value="edit">Edit</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="min-h-96">
               <MDEditor
                 value={markdown}
                 onChange={(val) => setMarkdown(val || "")}
-                preview="edit"
+                preview={editorMode}
                 hideToolbar={false}
                 data-color-mode="light"
                 height={600}
@@ -246,7 +252,7 @@ const ResumeDetail = () => {
         {jobDescription && (
           <Card>
             <CardHeader>
-              <CardTitle>Original Job Description</CardTitle>
+              <CardTitle>Job Description</CardTitle>
               <CardDescription>
                 The job description used to generate this resume.
               </CardDescription>

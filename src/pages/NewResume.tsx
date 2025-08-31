@@ -127,8 +127,6 @@ const NewResume = () => {
       const resumeMeta = {
         id: resumeId,
         title: title.trim(),
-        jobTitleGuess: extractJobTitle(jobDescription),
-        companyGuess: extractCompany(jobDescription),
         createdAt: now,
         updatedAt: now,
         language,
@@ -162,17 +160,6 @@ const NewResume = () => {
     } finally {
       setGenerating(false);
     }
-  };
-
-  // Simple extraction functions (can be improved with better parsing)
-  const extractJobTitle = (jd: string): string | undefined => {
-    const titleMatch = jd.match(/job title:\s*([^\n]+)/i) || jd.match(/position:\s*([^\n]+)/i);
-    return titleMatch?.[1]?.trim();
-  };
-
-  const extractCompany = (jd: string): string | undefined => {
-    const companyMatch = jd.match(/company:\s*([^\n]+)/i);
-    return companyMatch?.[1]?.trim();
   };
 
   return (

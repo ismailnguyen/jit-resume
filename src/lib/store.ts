@@ -18,8 +18,6 @@ export interface PersonalMeta {
 export interface ResumeMeta {
   id: string;
   title: string;
-  jobTitleGuess?: string;
-  companyGuess?: string;
   createdAt: string;
   updatedAt: string;
   language: 'auto' | 'en' | 'fr' | 'de' | 'es';
