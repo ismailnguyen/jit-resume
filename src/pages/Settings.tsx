@@ -190,6 +190,9 @@ const Settings = () => {
                 <SelectItem value="compact">Compact</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout to fit more on one page.
+            </p>
           </div>
 
           <div className="space-y-2">

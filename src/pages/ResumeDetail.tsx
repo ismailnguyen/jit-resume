@@ -154,15 +154,59 @@ const ResumeDetail = () => {
     const htmlContent = marked.parse(markdown);
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) return;
+    const themeCSS = (() => {
+      const base = `
+        @page { margin: 1in; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { color: #0f172a; }
+        a { color: inherit; text-decoration: none; }
+        ul, ol { padding-left: 1.25rem; }
+        h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
+        p, li { page-break-inside: avoid; }
+        .section { margin-top: 0.75rem; }
+      `;
+      switch (settings.pdfTheme) {
+        case 'classic':
+          return `
+            ${base}
+            body { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; }
+            h1 { font-size: 24px; letter-spacing: 0.2px; margin-bottom: 0.25rem; }
+            h2 { font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; margin-top: 1rem; }
+            h3 { font-size: 14px; font-weight: 600; }
+            p, li { font-size: 11.5px; }
+            ul { margin-top: 0.25rem; }
+          `;
+        case 'compact':
+          return `
+            ${base}
+            @page { margin: 0.6in; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.25; }
+            h1 { font-size: 20px; margin-bottom: 0.1rem; }
+            h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 0.6rem; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 11px; margin: 0.15rem 0; }
+            ul { margin-top: 0.1rem; }
+          `;
+        case 'modern':
+        default:
+          return `
+            ${base}
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; }
+            h1 { font-size: 26px; margin-bottom: 0.25rem; }
+            h2 { font-size: 16px; color: #334155; margin-top: 1rem; }
+            h3 { font-size: 13px; font-weight: 600; }
+            p, li { font-size: 12px; }
+            strong { color: #0f172a; }
+          `;
+      }
+    })();
+
     printWindow.document.write(`
       <html>
         <head>
+          <meta charset="utf-8" />
           <title>Resume PDF</title>
-          <style>
-            body { font-family: sans-serif; margin: 40px; }
-            h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; }
-            ul, ol { margin-left: 1.5em; }
-          </style>
+          <style>${themeCSS}</style>
         </head>
         <body>${htmlContent}</body>
       </html>
@@ -215,9 +259,6 @@ const ResumeDetail = () => {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {resumeMeta.title}
-              {typeof (resumeMeta.fitScore ?? fitScore) === 'number' && (
-                <Badge variant="secondary">{(resumeMeta.fitScore ?? fitScore)}% Fit</Badge>
-              )}
             </h1>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <span>Created {new Date(resumeMeta.createdAt).toLocaleDateString()}</span>

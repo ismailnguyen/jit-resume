@@ -38,6 +38,27 @@ SELF-CHECK BEFORE RETURNING (DO NOT OUTPUT THIS STEP)
 Return ONLY the final Markdown résumé (no explanations).`;
 
 export async function generateResume(args: GenerateResumeArgs): Promise<string> {
+  const themeGuidance = (() => {
+    switch ((args.pdfTheme as string) || 'modern') {
+      case 'classic':
+        return `Theme details (classic):
+- Traditional serif feel; clear section demarcation;
+- Normal spacing; moderate verbosity in bullets;
+- Conservative styling, no emojis or icons.`;
+      case 'compact':
+        return `Theme details (compact):
+- Highly condensed; tighter spacing and shorter bullets;
+- Prefer merging related points; avoid redundant phrasing;
+- Keep to one page if feasible.`;
+      case 'modern':
+      default:
+        return `Theme details (modern):
+- Clean sans-serif; balanced white space;
+- Concise bullets with clear impact phrasing;
+- Two pages acceptable if justified.`;
+    }
+  })();
+
   const userPrompt = `# Job Description
 ${args.jobDescription}
 
@@ -47,6 +68,7 @@ ${args.personalDetails}
 # Additional Guidance
 Target language: ${args.language || 'en'}
 Theme: ${args.pdfTheme || 'modern'}
+${themeGuidance}
 Include contact links: ${args.includeContactLinks ?? true}
 Anonymize location: ${args.anonymizeLocation ?? false}
 
