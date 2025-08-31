@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
-import { Plus, User, Settings, AlertTriangle } from "lucide-react";
+import { Plus, User, Settings, AlertTriangle, ChevronRight } from "lucide-react";
 
 const Dashboard = () => {
-  const { settings, resumesIndex, personalMeta } = useStore();
+  const { settings, resumesIndex, personalMeta, firstRunSeen, setFirstRunSeen } = useStore();
 
   const hasApiKey = !!settings.openAIApiKey;
   const hasPersonalDetails = !!personalMeta;
@@ -13,6 +13,39 @@ const Dashboard = () => {
 
   return (
   <div className="p-6 w-full">
+      {/* First-run Guide */}
+      {!firstRunSeen && (
+        <div className="mb-6 rounded-lg border shadow-medium bg-background">
+          <div className="p-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Quick Start</h2>
+              <p className="text-sm text-muted-foreground">Get set up in three steps.</p>
+            </div>
+            <button className="text-sm text-muted-foreground hover:underline" onClick={() => setFirstRunSeen(true)}>Dismiss</button>
+          </div>
+          <div className="px-4 pb-4 grid gap-3 md:grid-cols-3">
+            <GuideStep
+              title="Add API Key"
+              done={!!settings.openAIApiKey}
+              href="/app/settings"
+              description="Enable AI generation"
+            />
+            <GuideStep
+              title="Add Personal Details"
+              done={!!personalMeta}
+              href="/app/personal"
+              description="Create your canonical resume"
+            />
+            <GuideStep
+              title="Generate Your First Resume"
+              done={resumesIndex.length > 0}
+              href="/app/new"
+              description="Paste a JD and go"
+              onClick={() => setFirstRunSeen(true)}
+            />
+          </div>
+        </div>
+      )}
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
@@ -181,3 +214,15 @@ const Dashboard = () => {
 import { cn } from "@/lib/utils";
 
 export default Dashboard;
+
+function GuideStep({ title, description, href, done, onClick }: { title: string; description: string; href: string; done?: boolean; onClick?: () => void }) {
+  return (
+    <Link to={href} onClick={onClick} className={`flex items-center justify-between rounded-md border p-3 hover:bg-accent transition-smooth ${done ? 'opacity-60' : ''}`}>
+      <div>
+        <div className="text-sm font-medium">{title}</div>
+        <div className="text-xs text-muted-foreground">{description}</div>
+      </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+    </Link>
+  );
+}

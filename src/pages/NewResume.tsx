@@ -54,6 +54,8 @@ const NewResume = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [language, setLanguage] = useState<'auto' | 'en' | 'fr' | 'de' | 'es'>('auto');
   const [generating, setGenerating] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const insertSample = () => {
     setJobDescription(SAMPLE_JD);
@@ -64,6 +66,31 @@ const NewResume = () => {
       title: "Sample inserted",
       description: "You can now customize or generate directly with this example.",
     });
+  };
+
+  const importFromUrl = async () => {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    try {
+      const res = await fetch(importUrl, { mode: 'cors' as RequestMode });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      // Remove script/style/noscript
+      doc.querySelectorAll('script, style, noscript').forEach(el => el.remove());
+      const text = doc.body?.innerText || doc.body?.textContent || '';
+      if (!text.trim()) throw new Error('No text content extracted');
+      setJobDescription(text.trim());
+      toast({ title: 'Imported', description: 'Job description imported from URL.' });
+    } catch (e) {
+      toast({
+        title: 'Import Failed',
+        description: e instanceof Error ? e.message : 'Could not import from URL (CORS may block). Try copy/paste instead.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -109,6 +136,24 @@ const NewResume = () => {
         return;
       }
 
+      // Optional cost estimate and guard
+      const approxTokens = (str: string) => Math.ceil((str.length || 0) / 4);
+      const inTokens = approxTokens(jobDescription) + approxTokens(personalDetails);
+      const outTokens = Math.max(600, Math.min(2000, Math.round(approxTokens(personalDetails) * 0.5 + approxTokens(jobDescription) * 0.2)));
+      const estCost = ((inTokens / 1000) * (settings.priceInPer1k || 0)) + ((outTokens / 1000) * (settings.priceOutPer1k || 0));
+      if (settings.costControlsEnabled && (settings.maxGenerationCost || 0) > 0) {
+        if (estCost > (settings.maxGenerationCost || 0)) {
+          const proceed = settings.showEstimateBeforeGenerate ? window.confirm(`Estimated cost $${estCost.toFixed(2)} exceeds your cap. Proceed?`) : false;
+          if (!proceed) {
+            toast({ title: 'Generation cancelled', description: `Estimate $${estCost.toFixed(2)} is above your cap. Adjust in Settings.` });
+            return;
+          }
+        } else if (settings.showEstimateBeforeGenerate) {
+          const proceed = window.confirm(`Estimated cost: ~$${estCost.toFixed(2)} (input ~${inTokens} tok, output ~${outTokens} tok). Proceed?`);
+          if (!proceed) { setGenerating(false); return; }
+        }
+      }
+
       // Generate resume
       const generatedMarkdown = await generateResume({
         apiKey: settings.openAIApiKey,
@@ -121,7 +166,7 @@ const NewResume = () => {
         anonymizeLocation: settings.anonymizeLocation,
       });
 
-      const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, generatedMarkdown);
+      const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, generatedMarkdown, { weights: settings.atsWeights });
 
       // Assess HR-style fit via LLM (best-effort; non-blocking on failure)
       let fit: { score: number; summary?: string; strengths?: string[]; gaps?: string[]; seniority?: 'under' | 'exact' | 'over' } | undefined = undefined;
@@ -245,10 +290,54 @@ const NewResume = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={insertSample}>
-                Insert Sample
-              </Button>
+            <div className="grid gap-2 sm:grid-cols-3 items-end">
+              <div className="sm:col-span-2">
+                <Label htmlFor="importUrl">Import from URL</Label>
+                <Input id="importUrl" placeholder="https://example.com/job-posting" value={importUrl} onChange={(e) => setImportUrl(e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="w-full" onClick={importFromUrl} disabled={importing || !importUrl}>
+                  {importing ? 'Importing…' : 'Import URL'}
+                </Button>
+                <Button variant="outline" size="sm" className="w-full" onClick={insertSample}>
+                  Insert Sample
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3 items-end">
+              <div className="sm:col-span-2">
+                <Label htmlFor="importFile">Import from PDF/Text</Label>
+                <Input id="importFile" type="file" accept=".pdf,.txt" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    if (file.type === 'text/plain') {
+                      const text = await file.text();
+                      setJobDescription(text);
+                      toast({ title: 'Imported', description: 'Text file imported.' });
+                    } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                      // Best-effort: try to read as text; for complex PDFs you may need PDF.js
+                      const text = await file.text().catch(() => '');
+                      if (text && /\w{20}/.test(text)) {
+                        setJobDescription(text);
+                        toast({ title: 'Imported (raw)', description: 'PDF imported as raw text. Review formatting.' });
+                      } else {
+                        toast({ title: 'PDF Parsing Not Available', description: 'Browser could not extract text from this PDF. Please copy/paste the JD text or use a URL.', variant: 'destructive' });
+                      }
+                    } else {
+                      toast({ title: 'Unsupported file type', description: 'Please upload a .pdf or .txt file.', variant: 'destructive' });
+                    }
+                  } catch (err) {
+                    toast({ title: 'Import failed', description: err instanceof Error ? err.message : 'Could not import file.', variant: 'destructive' });
+                  } finally {
+                    e.currentTarget.value = '';
+                  }
+                }} />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                PDFs may require manual copy/paste if text extraction is blocked.
+              </div>
             </div>
             
             <Textarea

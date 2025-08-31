@@ -173,7 +173,68 @@ export async function assessFit(args: AssessFitArgs): Promise<FitAnalysis> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
     throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to assess fit'}`);
+}
+
+// Gap coaching: suggest truthful bullet improvements to address JD gaps
+export interface GapCoachingArgs {
+  apiKey: string;
+  model: string;
+  jobDescription: string;
+  personalDetails: string;
+  generatedResume?: string;
+}
+
+export interface GapCoachingResult {
+  suggestions: string[]; // bullet-ready lines
+  guidance?: string; // short guidance paragraph
+}
+
+const GAP_SYSTEM_PROMPT = `You are a senior technical recruiter. Suggest practical, truthful resume bullet improvements that address gaps vs. the job description.
+
+Rules:
+- Do not fabricate facts. Only rephrase or refocus content plausibly supported by the provided resume(s).
+- Prefer action‑impact phrasing, technologies and domain terms from the JD.
+- Keep each suggestion a single bullet line, 12–25 words.
+- Output JSON only, no extra text.
+
+Schema:
+{ "suggestions": string[], "guidance": string }`;
+
+export async function coachGaps(args: GapCoachingArgs): Promise<GapCoachingResult> {
+  const userPrompt = `# Job Description\n${args.jobDescription}\n\n# Candidate Canonical Resume (Markdown)\n${args.personalDetails}\n\n# Tailored Resume (Markdown)\n${args.generatedResume || '(not provided)'}\n\n# Task\nPropose bullet-level improvements to strengthen alignment without inventing facts. Return JSON.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        { role: "system", content: GAP_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to generate coaching'}`);
   }
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+      guidance: parsed.guidance || '',
+    };
+  } catch {
+    return { suggestions: [], guidance: content?.slice(0, 240) };
+  }
+}
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "";

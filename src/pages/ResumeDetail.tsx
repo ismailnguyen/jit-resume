@@ -10,8 +10,8 @@ import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marked } from 'marked';
-import { computeCoverageScore } from "@/lib/analysis";
-import { assessFit } from "@/lib/openai";
+import { computeCoverageScore, canonicalizeToken } from "@/lib/analysis";
+import { assessFit, coachGaps } from "@/lib/openai";
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +31,9 @@ const ResumeDetail = () => {
   const [fitGaps, setFitGaps] = useState<string[]>([]);
   const [fitSeniority, setFitSeniority] = useState<'under' | 'exact' | 'over' | null>(null);
   const [fitLoading, setFitLoading] = useState(false);
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
+  const [coachingLoading, setCoachingLoading] = useState(false);
+  const [coaching, setCoaching] = useState<{ suggestions: string[]; guidance?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -68,7 +71,7 @@ const ResumeDetail = () => {
           setFitSeniority((data.fit.seniority as any) ?? null);
         }
         // Compute on the fly for display (and to refresh on edits)
-        const { score, jdKeywords, resumeSkills } = computeCoverageScore(data.jdRaw, data.markdown);
+        const { score, jdKeywords, resumeSkills } = computeCoverageScore(data.jdRaw, data.markdown, { weights: settings.atsWeights });
         setComputedScore(score);
         if (!data.derived) {
           setDerivedSkills(resumeSkills);
@@ -100,7 +103,7 @@ const ResumeDetail = () => {
     try {
       const resumeData = await getResume(id);
       if (resumeData) {
-        const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, markdown);
+        const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, markdown, { weights: settings.atsWeights });
         await saveResume(id, {
           markdown,
           jdRaw: jobDescription,
@@ -281,6 +284,20 @@ const ResumeDetail = () => {
             <Download className="h-4 w-4 mr-1" />
             PDF
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const reordered = smartReorder(markdown, derivedKeywords);
+              if (reordered && reordered !== markdown) {
+                setMarkdown(reordered);
+                toast({ title: 'Reordered', description: 'Bullets reordered by JD relevance. Review changes before saving.' });
+              } else {
+                toast({ title: 'No changes', description: 'Could not find bullets to reorder, or order already optimal.' });
+              }
+            }}
+          >
+            Smart Reorder
+          </Button>
           <Button 
             onClick={handleSave} 
             disabled={saving || !hasChanges}
@@ -358,6 +375,35 @@ const ResumeDetail = () => {
               >
                 {fitLoading ? 'Scoring...' : 'Re-score Fit'}
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!settings.openAIApiKey) {
+                    toast({ title: 'API Key Required', description: 'Set your OpenAI API key in Settings first.', variant: 'destructive' });
+                    return;
+                  }
+                  setCoachingLoading(true);
+                  try {
+                    const canonical = await getPersonalDetails();
+                    const result = await coachGaps({
+                      apiKey: settings.openAIApiKey,
+                      model: settings.model,
+                      jobDescription,
+                      personalDetails: canonical || '',
+                      generatedResume: markdown,
+                    });
+                    setCoaching({ suggestions: result.suggestions || [], guidance: result.guidance || '' });
+                  } catch (e) {
+                    toast({ title: 'Coaching Failed', description: e instanceof Error ? e.message : 'Could not generate suggestions.', variant: 'destructive' });
+                  } finally {
+                    setCoachingLoading(false);
+                  }
+                }}
+                disabled={coachingLoading}
+              >
+                {coachingLoading ? 'Coaching…' : 'Get Gap Coaching'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -389,6 +435,32 @@ const ResumeDetail = () => {
           </CardContent>
         </Card>
 
+        {coaching && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Coaching Suggestions</CardTitle>
+              <CardDescription>Bullet-level improvements to address gaps truthfully.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {coaching.guidance && (
+                <div className="text-sm text-muted-foreground">{coaching.guidance}</div>
+              )}
+              {coaching.suggestions.length > 0 ? (
+                <ul className="list-disc pl-6 space-y-2 text-sm">
+                  {coaching.suggestions.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="flex-1">{s}</span>
+                      <Button variant="outline" size="xs" onClick={() => navigator.clipboard.writeText(s)}>Copy</Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-sm text-muted-foreground">No suggestions available.</div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
@@ -407,15 +479,42 @@ const ResumeDetail = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="min-h-96">
-              <MDEditor
-                value={markdown}
-                onChange={(val) => setMarkdown(val || "")}
-                preview={editorMode}
-                hideToolbar={false}
-                data-color-mode="light"
-                height={600}
-              />
+            {/* Mobile/tablet: toggle between preview and edit */}
+            <div className="lg:hidden">
+              <div className="min-h-96">
+                <MDEditor
+                  value={markdown}
+                  onChange={(val) => setMarkdown(val || "")}
+                  preview={editorMode}
+                  hideToolbar={false}
+                  data-color-mode="light"
+                  height={500}
+                />
+              </div>
+            </div>
+
+            {/* Desktop: side-by-side */}
+            <div className="hidden lg:grid lg:grid-cols-2 gap-4">
+              <div>
+                <MDEditor
+                  value={markdown}
+                  onChange={(val) => setMarkdown(val || "")}
+                  preview={'edit'}
+                  hideToolbar={false}
+                  data-color-mode="light"
+                  height={600}
+                />
+              </div>
+              <div>
+                <MDEditor
+                  value={markdown}
+                  onChange={() => {}}
+                  preview={'preview'}
+                  hideToolbar={true}
+                  data-color-mode="light"
+                  height={600}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -453,6 +552,30 @@ const ResumeDetail = () => {
           </Card>
         )}
 
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Score Explanations</CardTitle>
+                <CardDescription>What ATS and Fit scores mean.</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowScoreInfo(!showScoreInfo)}>
+                {showScoreInfo ? 'Hide' : 'Learn more'}
+              </Button>
+            </div>
+          </CardHeader>
+          {showScoreInfo && (
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <div>
+                <span className="font-medium text-foreground">ATS score:</span> Weighted keyword coverage. Rewards terms found in Skills, Experience, Summary, then anywhere else. Synonym-aware (e.g., JS → JavaScript). It’s a proxy for keyword alignment, not candidate quality.
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Fit score:</span> HR-style judgment of recruiter-screen likelihood given the JD and your résumé. Penalizes missing must‑haves and seniority mismatch. Uses qualitative signals; keep facts truthful.
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
         {jobDescription && (
           <Card>
             <CardHeader>
@@ -477,3 +600,34 @@ const ResumeDetail = () => {
 };
 
 export default ResumeDetail;
+
+function smartReorder(md: string, jdKeywords: string[]): string {
+  const keywords = new Set(jdKeywords.map(k => canonicalizeToken(k)));
+  const lines = md.split(/\r?\n/);
+  const out: string[] = [];
+  let i = 0;
+  const isBullet = (s: string) => /^\s*[-*•]\s+/.test(s);
+  const scoreLine = (s: string) => {
+    const text = s.toLowerCase();
+    const tokens = text.replace(/[^a-z0-9+#.\-\s]/g, ' ').split(/\s+/).map(canonicalizeToken);
+    let score = 0;
+    for (const t of tokens) if (keywords.has(t)) score++;
+    return score;
+  };
+  while (i < lines.length) {
+    out.push(lines[i]);
+    // If next lines are a bullet block, collect and reorder
+    if (isBullet(lines[i + 1] || '')) {
+      const blockStart = i + 1;
+      let j = blockStart;
+      const block: string[] = [];
+      while (j < lines.length && isBullet(lines[j])) { block.push(lines[j]); j++; }
+      const sorted = [...block].sort((a, b) => scoreLine(b) - scoreLine(a));
+      out.push(...sorted);
+      i = j; // skip block
+      continue;
+    }
+    i++;
+  }
+  return out.join('\n');
+}

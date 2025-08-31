@@ -10,6 +10,54 @@ import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, TestTube, Trash2, AlertTriangle } from "lucide-react";
 import { clearAllData } from "@/lib/storage";
+import React from "react";
+
+function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact' }) {
+  const sampleHTML = `
+    <h1>Jane Doe</h1>
+    <h2>Experience</h2>
+    <p><strong>Senior Frontend Engineer</strong> — 2021–Present</p>
+    <ul>
+      <li>Led React/TypeScript projects; improved performance and DX</li>
+      <li>Shipped design system; collaborated with cross‑functional teams</li>
+    </ul>
+  `;
+  const base = `
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h1,h2,h3 { margin: 0; }
+    ul { padding-left: 1.2rem; margin: 0.25rem 0; }
+    p { margin: 0.25rem 0; }
+  `;
+  const css = theme === 'classic'
+    ? `
+      ${base}
+      .pv { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; font-size: 12px; }
+      .pv h1 { font-size: 18px; margin-bottom: 4px; }
+      .pv h2 { font-size: 14px; border-bottom: 1px solid #e2e8f0; margin-top: 6px; }
+      .pv h3 { font-size: 12px; }
+    `
+    : theme === 'compact'
+    ? `
+      ${base}
+      .pv { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Arial, sans-serif; line-height: 1.25; font-size: 11px; }
+      .pv h1 { font-size: 16px; margin-bottom: 2px; }
+      .pv h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+      .pv h3 { font-size: 11px; }
+    `
+    : `
+      ${base}
+      .pv { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; font-size: 12px; }
+      .pv h1 { font-size: 20px; margin-bottom: 4px; }
+      .pv h2 { font-size: 13px; color: #334155; margin-top: 6px; }
+      .pv h3 { font-size: 12px; }
+    `;
+  return (
+    <div className="p-3 bg-white">
+      <style>{css}</style>
+      <div className="pv" dangerouslySetInnerHTML={{ __html: sampleHTML }} />
+    </div>
+  );
+}
 
 const Settings = () => {
   const { settings, setSettings, clearAllData: clearStoreData } = useStore();
@@ -193,6 +241,23 @@ const Settings = () => {
             <p className="text-xs text-muted-foreground">
               Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout to fit more on one page.
             </p>
+
+            {/* Theme previews */}
+            <div className="grid sm:grid-cols-3 gap-3 mt-3">
+              {(['modern','classic','compact'] as const).map((theme) => (
+                <button
+                  key={theme}
+                  type="button"
+                  onClick={() => setSettings({ pdfTheme: theme })}
+                  className={`rounded-md border text-left p-3 hover:bg-accent transition-smooth ${settings.pdfTheme===theme ? 'ring-2 ring-primary' : ''}`}
+                >
+                  <div className="text-xs font-medium mb-2 capitalize">{theme} preview</div>
+                  <div className="rounded bg-background overflow-hidden">
+                    <ThemePreview theme={theme} />
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -237,6 +302,76 @@ const Settings = () => {
               checked={settings.anonymizeLocation}
               onCheckedChange={(checked) => setSettings({ anonymizeLocation: checked })}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ATS Scoring Weights */}
+      <Card>
+        <CardHeader>
+          <CardTitle>ATS Scoring Weights</CardTitle>
+          <CardDescription>Control how sections contribute to the ATS score.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-4 gap-3">
+          <div>
+            <Label>Skills</Label>
+            <Input type="number" step="0.1" value={settings.atsWeights?.skills ?? 3}
+              onChange={(e) => setSettings({ atsWeights: { ...(settings.atsWeights||{experience:2,summary:1.5,other:1,skills:3}), skills: parseFloat(e.target.value||'0') } })} />
+          </div>
+          <div>
+            <Label>Experience</Label>
+            <Input type="number" step="0.1" value={settings.atsWeights?.experience ?? 2}
+              onChange={(e) => setSettings({ atsWeights: { ...(settings.atsWeights||{skills:3,summary:1.5,other:1,experience:2}), experience: parseFloat(e.target.value||'0') } })} />
+          </div>
+          <div>
+            <Label>Summary</Label>
+            <Input type="number" step="0.1" value={settings.atsWeights?.summary ?? 1.5}
+              onChange={(e) => setSettings({ atsWeights: { ...(settings.atsWeights||{skills:3,experience:2,other:1,summary:1.5}), summary: parseFloat(e.target.value||'0') } })} />
+          </div>
+          <div>
+            <Label>Other</Label>
+            <Input type="number" step="0.1" value={settings.atsWeights?.other ?? 1}
+              onChange={(e) => setSettings({ atsWeights: { ...(settings.atsWeights||{skills:3,experience:2,summary:1.5,other:1}), other: parseFloat(e.target.value||'0') } })} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cost Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cost Controls</CardTitle>
+          <CardDescription>Estimate and limit generation costs.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Enable Cost Controls</Label>
+              <p className="text-xs text-muted-foreground">Show cost estimates and enforce a per‑generation cap.</p>
+            </div>
+            <Switch checked={!!settings.costControlsEnabled} onCheckedChange={(v) => setSettings({ costControlsEnabled: v })} />
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-3">
+            <div>
+              <Label>Input price ($/1k tokens)</Label>
+              <Input type="number" step="0.01" value={settings.priceInPer1k ?? 0} onChange={(e) => setSettings({ priceInPer1k: parseFloat(e.target.value || '0') })} />
+            </div>
+            <div>
+              <Label>Output price ($/1k tokens)</Label>
+              <Input type="number" step="0.01" value={settings.priceOutPer1k ?? 0} onChange={(e) => setSettings({ priceOutPer1k: parseFloat(e.target.value || '0') })} />
+            </div>
+            <div>
+              <Label>Max per generation ($)</Label>
+              <Input type="number" step="0.01" value={settings.maxGenerationCost ?? 0} onChange={(e) => setSettings({ maxGenerationCost: parseFloat(e.target.value || '0') })} />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Show estimate before generating</Label>
+              <p className="text-xs text-muted-foreground">Ask for confirmation if the estimate looks high.</p>
+            </div>
+            <Switch checked={!!settings.showEstimateBeforeGenerate} onCheckedChange={(v) => setSettings({ showEstimateBeforeGenerate: v })} />
           </div>
         </CardContent>
       </Card>

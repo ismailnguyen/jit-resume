@@ -8,6 +8,14 @@ export interface Settings {
   defaultLanguage: 'en' | 'fr' | 'de' | 'es';
   includeContactLinks: boolean;
   anonymizeLocation: boolean;
+  // Cost controls
+  costControlsEnabled?: boolean;
+  priceInPer1k?: number;   // USD per 1k input tokens (editable)
+  priceOutPer1k?: number;  // USD per 1k output tokens (editable)
+  maxGenerationCost?: number; // USD cap per generation
+  showEstimateBeforeGenerate?: boolean;
+  // ATS weights
+  atsWeights?: { skills: number; experience: number; summary: number; other: number };
 }
 
 export interface PersonalMeta {
@@ -23,6 +31,7 @@ export interface ResumeMeta {
   language: 'auto' | 'en' | 'fr' | 'de' | 'es';
   score?: number;
   fitScore?: number;
+  tags?: string[];
 }
 
 interface Store {
@@ -33,6 +42,8 @@ interface Store {
   // Personal details
   personalMeta: PersonalMeta | null;
   setPersonalMeta: (meta: PersonalMeta | null) => void;
+  firstRunSeen: boolean;
+  setFirstRunSeen: (seen: boolean) => void;
   
   // Resumes
   resumesIndex: ResumeMeta[];
@@ -52,6 +63,12 @@ const defaultSettings: Settings = {
   defaultLanguage: 'en',
   includeContactLinks: true,
   anonymizeLocation: false,
+  costControlsEnabled: false,
+  priceInPer1k: 0.15,   // defaults; users can adjust
+  priceOutPer1k: 0.6,
+  maxGenerationCost: 0,
+  showEstimateBeforeGenerate: true,
+  atsWeights: { skills: 3, experience: 2, summary: 1.5, other: 1 },
 };
 
 export const useStore = create<Store>()(
@@ -67,6 +84,8 @@ export const useStore = create<Store>()(
       // Personal details
       personalMeta: null,
       setPersonalMeta: (meta) => set({ personalMeta: meta }),
+      firstRunSeen: false,
+      setFirstRunSeen: (seen) => set({ firstRunSeen: seen }),
       
       // Resumes
       resumesIndex: [],
@@ -100,6 +119,7 @@ export const useStore = create<Store>()(
         settings: state.settings,
         personalMeta: state.personalMeta,
         resumesIndex: state.resumesIndex,
+        firstRunSeen: state.firstRunSeen,
       }),
     }
   )

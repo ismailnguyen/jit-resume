@@ -4,13 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
   const deleteResume = useStore((state) => state.deleteResume);
+  const updateResume = useStore((state) => state.updateResume);
   const navigate = useNavigate();
 
   // No need to fetch resumes, store is reactive
+
+  const [query, setQuery] = useState("");
+  const allTags = Array.from(new Set(resumes.flatMap(r => r.tags || []))).sort();
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+
+  const filtered = resumes.filter(r => {
+    const matchesQuery = !query.trim() || r.title.toLowerCase().includes(query.toLowerCase());
+    const matchesTags = activeTags.length === 0 || (r.tags || []).some(t => activeTags.includes(t));
+    return matchesQuery && matchesTags;
+  });
 
   const handleView = (id: string) => {
     navigate(`/app/resume/${id}`);
@@ -25,7 +38,25 @@ const ResumeLibrary = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <h1 className="text-3xl font-bold mb-4">Resume Library</h1>
-      {resumes.length === 0 ? (
+      {/* Filters */}
+      <div className="grid gap-3 sm:grid-cols-3 items-end">
+        <div className="sm:col-span-2">
+          <Label htmlFor="search">Search</Label>
+          <Input id="search" placeholder="Search by title" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Filter by tag</div>
+          <div className="flex flex-wrap gap-2">
+            {allTags.length === 0 ? (
+              <span className="text-xs text-muted-foreground">No tags yet</span>
+            ) : allTags.map(tag => (
+              <button key={tag} className={`text-xs px-2 py-1 rounded border ${activeTags.includes(tag) ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`} onClick={() => setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}>{tag}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-semibold mb-2">No resumes found</h2>
@@ -34,7 +65,7 @@ const ResumeLibrary = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {resumes.map(resume => (
+          {filtered.map(resume => (
             <Card key={resume.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -49,6 +80,26 @@ const ResumeLibrary = () => {
               <CardContent className="flex items-center justify-between">
                 <div>
                   <div className="text-xs">Created: {new Date(resume.createdAt).toLocaleDateString()}</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(resume.tags || []).map((t) => (
+                      <span key={t} className="text-xs px-2 py-0.5 border rounded-full">
+                        {t}
+                        <button className="ml-1 text-muted-foreground hover:text-foreground" onClick={() => updateResume(resume.id, { tags: (resume.tags || []).filter(x => x !== t) })}>×</button>
+                      </span>
+                    ))}
+                    <button
+                      className="text-xs px-2 py-0.5 border rounded hover:bg-accent"
+                      onClick={() => {
+                        const tag = prompt('Add tag');
+                        if (tag && tag.trim()) {
+                          const next = Array.from(new Set([...(resume.tags || []), tag.trim()]));
+                          updateResume(resume.id, { tags: next });
+                        }
+                      }}
+                    >
+                      + Add tag
+                    </button>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <Button size="sm" onClick={() => handleView(resume.id)}>View</Button>

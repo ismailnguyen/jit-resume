@@ -30,7 +30,7 @@ const VARIANT_MAP: Record<string, string> = {
   'front-end': 'frontend', frontend: 'frontend', 'back-end': 'backend', backend: 'backend',
 };
 
-function canonicalizeToken(token: string): string {
+export function canonicalizeToken(token: string): string {
   const t = token.trim().toLowerCase();
   if (!t) return t;
   const cleaned = t.replace(/^[^a-z0-9+#.\-]+|[^a-z0-9+#.\-]+$/g, '');
@@ -134,4 +134,3 @@ export function computeCoverageScore(
 
   return { score, jdKeywords, resumeSkills };
 }
-
