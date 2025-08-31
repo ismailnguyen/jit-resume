@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getResume, saveResume } from "@/lib/storage";
 import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
+import { marked } from 'marked';
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,12 +111,8 @@ const ResumeDetail = () => {
   };
 
   const handlePrint = () => {
-    // Print only the resume content
-    const resumeContent = document.getElementById('resume-content');
-    if (!resumeContent) {
-      window.print();
-      return;
-    }
+    // Open only the rendered markdown resume in a new tab, then print
+    const htmlContent = marked.parse(markdown);
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) return;
     printWindow.document.write(`
@@ -124,9 +121,11 @@ const ResumeDetail = () => {
           <title>Resume PDF</title>
           <style>
             body { font-family: sans-serif; margin: 40px; }
+            h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; }
+            ul, ol { margin-left: 1.5em; }
           </style>
         </head>
-        <body>${resumeContent.innerHTML}</body>
+        <body>${htmlContent}</body>
       </html>
     `);
     printWindow.document.close();
