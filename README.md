@@ -1,73 +1,103 @@
-# Welcome to your Lovable project
+# Just-in-Time Résumé (JIT Resume)
 
-## Project info
+Generate a tailored, ATS-friendly résumé for any job in seconds. Privacy‑first and browser‑based: your data stays on your device; the app calls OpenAI only when you generate AI outputs (tailored resume, fit analysis, coaching).
 
-**URL**: https://lovable.dev/projects/da07c32c-ae9e-48af-9722-5e3dd2cecf4e
+## Features
 
-## How can I edit this code?
+- Tailored résumé generation (Markdown → print‑ready PDF)
+- ATS keyword analysis with weighted score (synonym‑aware; tunable weights)
+- HR‑style Fit Score with strengths/gaps/seniority
+- Gap coaching (bullet‑level suggestions to close JD gaps)
+- Smart reorder of bullets by JD relevance
+- Side‑by‑side editor + live preview (desktop)
+- PDF themes with visual previews (Modern/Classic/Compact)
+- Import JD from URL or PDF/Text (transparent CORS fallback)
+- Tags + filters in library
+- Cost controls with token‑based estimate and per‑generation cap
+- First‑run guide and helpful score explanations
 
-There are several ways of editing your application.
+## Quick Start
 
-**Use Lovable**
+Prerequisites
+- Node.js 18+ and npm
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/da07c32c-ae9e-48af-9722-5e3dd2cecf4e) and start prompting.
+Setup
+```sh
+npm i
+npm run dev
+```
+Open http://localhost:5173
 
-Changes made via Lovable will be committed automatically to this repo.
+In the app:
+1) Settings → paste your OpenAI API key and pick a model.
+2) Personal Details → add your canonical Markdown résumé.
+3) New Resume → paste/import a job description, choose language, Generate.
 
-**Use your preferred IDE**
+## Usage Overview
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Target Language:
+  - Auto: detect language from the job description.
+  - Default: uses your default language from Settings.
+  - Or pick English/French/German/Spanish.
+- Themes: pick via preview cards in Settings; PDF export applies theme‑specific CSS.
+- Import:
+  - URL: app tries direct fetch; if blocked by CORS it transparently uses a readability proxy and notifies you it may take longer.
+  - File: upload .pdf or .txt (PDF extraction is best‑effort; review text).
+- Scores:
+  - ATS score shows coverage of top JD keywords found in your résumé, weighted by section (Skills > Experience > Summary > Other). Weights are adjustable in Settings.
+  - Fit score estimates recruiter‑screen likelihood via LLM; re‑score anytime.
+- Coaching: “Get Gap Coaching” suggests truthful bullet improvements. Copy and integrate.
+- Smart Reorder: reorders bullet blocks by JD relevance (synonym‑aware).
+- Tags & Filters: add tags to resumes, filter by search and tags in Library.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Cost Controls
 
-Follow these steps:
+Settings → Cost Controls let you:
+- Enable estimates and a per‑generation cap.
+- Configure $/1k tokens for input/output.
+- Show a confirm dialog with the estimated cost before generating.
+- Cancel if estimate exceeds your cap.
+
+Estimates use rough tokenization (chars/4) of JD + personal details for input and a bounded output size.
+
+## Data & Privacy
+
+- Storage: IndexedDB (via `idb`) + Zustand store; all data lives in your browser.
+- Network: Calls OpenAI’s API for generation, fit scoring, and coaching. URL import may use a readability proxy if the site blocks CORS.
+
+## Tech Stack
+
+- Vite, React, TypeScript
+- Tailwind CSS, shadcn/ui, lucide-react
+- Markdown editor: `@uiw/react-md-editor`, rendering via `marked`
+- State: Zustand; Storage: IndexedDB (`idb`)
+
+## Key Files
+
+- `src/pages/NewResume.tsx` — JD import, language selection, generation, cost checks
+- `src/pages/ResumeDetail.tsx` — editor/preview, ATS/Fit, coaching, smart reorder, PDF export
+- `src/pages/ResumeLibrary.tsx` — list, tags, filters
+- `src/pages/Settings.tsx` — API config, themes, cost controls, ATS weights
+- `src/lib/openai.ts` — OpenAI calls (generate, fit assess, gap coaching)
+- `src/lib/analysis.ts` — keyword extraction, section‑weighted ATS scoring
+- `src/lib/storage.ts` — IndexedDB schema (resumes + personal details)
+- `src/lib/store.ts` — app settings, index, and UI state (Zustand)
+
+## PDF Export
+
+Click “PDF” in the resume detail page to open the print dialog and save as PDF. The selected theme controls fonts, spacing, and headings.
+
+## Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app uses Vite and React; no server is required. Adjust styles in Tailwind and theme CSS in the print function inside `src/pages/ResumeDetail.tsx`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Notes & Limitations
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/da07c32c-ae9e-48af-9722-5e3dd2cecf4e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- URL import depends on site policies; a readability proxy is used when CORS blocks direct fetches.
+- PDF text extraction is best‑effort. Some PDFs require manual copy/paste.
+- ATS score is a heuristic for keyword alignment; it is not a guarantee of actual ATS outcomes.
