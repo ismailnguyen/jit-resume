@@ -224,26 +224,13 @@ const Settings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="pdfTheme">PDF Theme</Label>
-            <Select
-              value={settings.pdfTheme}
-              onValueChange={(value: typeof settings.pdfTheme) => setSettings({ pdfTheme: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="modern">Modern</SelectItem>
-                <SelectItem value="classic">Classic</SelectItem>
-                <SelectItem value="compact">Compact</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>PDF Theme</Label>
             <p className="text-xs text-muted-foreground">
               Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout to fit more on one page.
             </p>
 
             {/* Theme previews */}
-            <div className="grid sm:grid-cols-3 gap-3 mt-3">
+            <div className="grid sm:grid-cols-3 gap-3 mt-1">
               {(['modern','classic','compact'] as const).map((theme) => (
                 <button
                   key={theme}

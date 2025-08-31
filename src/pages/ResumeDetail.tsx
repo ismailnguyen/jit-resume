@@ -451,7 +451,19 @@ const ResumeDetail = () => {
                   {coaching.suggestions.map((s, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="flex-1">{s}</span>
-                      <Button variant="outline" size="xs" onClick={() => navigator.clipboard.writeText(s)}>Copy</Button>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(s).then(() => {
+                            toast({ title: 'Copied!', description: 'Suggestion copied to clipboard.' });
+                          }).catch(() => {
+                            toast({ title: 'Copy failed', description: 'Could not copy to clipboard.', variant: 'destructive' });
+                          });
+                        }}
+                      >
+                        Copy
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -594,7 +606,7 @@ const ResumeDetail = () => {
                     The job description used to generate this resume.
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setShowJobDescription(!showJobDescription)}>
+                <Button variant="ghost" size="sm" onClick={() => setShowJobDescription(!showJobDescription)}>
                   {showJobDescription ? 'Hide' : 'Show'}
                 </Button>
               </div>
