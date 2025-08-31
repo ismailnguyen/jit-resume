@@ -81,8 +81,7 @@ const LandingPage = () => {
                 Just‑in‑Time Résumé
               </h1>
               <p className="text-lg lg:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed" style={{ transform: "translate3d(calc(var(--mx,0)*6px), calc((var(--scrollY,0)*-0.06) + (var(--my,0)*3px)), 0)", willChange: "transform" }}>
-                Tailor your résumé to any job in seconds. ATS‑aware keyword analysis, HR‑style fit scoring, and gap coaching —
-                all privacy‑first in your browser.
+                Paste a job post and get a focused, job‑ready résumé in seconds. We highlight the right keywords, explain the fit, and suggest honest tweaks — all right in your browser.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center" style={{ transform: "translate3d(calc(var(--mx,0)*4px), calc((var(--scrollY,0)*-0.04) + (var(--my,0)*2px)), 0)", willChange: "transform" }}>
                 <Button
@@ -91,7 +90,7 @@ const LandingPage = () => {
                   className="bg-gradient-hero hover:opacity-90 transition-smooth text-white border-0 shadow-glow text-lg px-8 py-6"
                 >
                   <Link to="/app">
-                    Let’s customize your résumé
+                    Get my job‑ready résumé
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -155,7 +154,7 @@ const LandingPage = () => {
       <footer className="border-t border-border/50 py-8">
         <div className="container mx-auto px-4">
           <div className="text-center text-sm text-muted-foreground">
-            <p>Made with ❤️ — Your data stays in your browser.</p>
+            <p>Made with AI — Your data stays in your browser.</p>
             <p className="mt-2">Open source • Privacy‑first • No tracking</p>
           </div>
         </div>
