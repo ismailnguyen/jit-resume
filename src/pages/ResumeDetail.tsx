@@ -34,6 +34,7 @@ const ResumeDetail = () => {
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [coachingLoading, setCoachingLoading] = useState(false);
   const [coaching, setCoaching] = useState<{ suggestions: string[]; guidance?: string } | null>(null);
+  const [showJobDescription, setShowJobDescription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -522,10 +523,17 @@ const ResumeDetail = () => {
         {(derivedSkills.length > 0 || derivedKeywords.length > 0) && (
           <Card>
             <CardHeader>
-              <CardTitle>Keyword Analysis</CardTitle>
-              <CardDescription>
-                Extracted skills and top keywords used for matching.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Keyword Analysis</CardTitle>
+                  <CardDescription>
+                    Extracted skills and top keywords used for matching.
+                  </CardDescription>
+                </div>
+                {typeof (resumeMeta.score ?? computedScore) === 'number' && (
+                  <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% ATS</Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {derivedSkills.length > 0 && (
@@ -579,18 +587,27 @@ const ResumeDetail = () => {
         {jobDescription && (
           <Card>
             <CardHeader>
-              <CardTitle>Job Description</CardTitle>
-              <CardDescription>
-                The job description used to generate this resume.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <pre className="whitespace-pre-wrap text-sm font-mono">
-                  {jobDescription}
-                </pre>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Job Description</CardTitle>
+                  <CardDescription>
+                    The job description used to generate this resume.
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowJobDescription(!showJobDescription)}>
+                  {showJobDescription ? 'Hide' : 'Show'}
+                </Button>
               </div>
-            </CardContent>
+            </CardHeader>
+            {showJobDescription && (
+              <CardContent>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <pre className="whitespace-pre-wrap text-sm font-mono">
+                    {jobDescription}
+                  </pre>
+                </div>
+              </CardContent>
+            )}
           </Card>
         )}
 
