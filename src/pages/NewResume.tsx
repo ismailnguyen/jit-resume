@@ -13,6 +13,7 @@ import { saveResume } from "@/lib/storage";
 import { getPersonalDetails } from "@/lib/storage";
 import { nanoid } from "nanoid";
 import { FileText, Wand2, Sparkles } from "lucide-react";
+import { computeCoverageScore } from "@/lib/analysis";
 
 const SAMPLE_JD = `Job Title: Senior Frontend Developer
 Company: TechCorp Inc.
@@ -120,6 +121,8 @@ const NewResume = () => {
         anonymizeLocation: settings.anonymizeLocation,
       });
 
+      const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, generatedMarkdown);
+
       // Create resume record
       const resumeId = nanoid();
       const now = new Date().toISOString();
@@ -130,13 +133,14 @@ const NewResume = () => {
         createdAt: now,
         updatedAt: now,
         language,
+        score,
       };
 
       // Save to storage
       await saveResume(resumeId, {
         markdown: generatedMarkdown,
         jdRaw: jobDescription,
-        derived: { skills: [], keywords: [] }, // TODO: implement scoring
+        derived: { skills: resumeSkills, keywords: jdKeywords },
       });
 
       // Add to store

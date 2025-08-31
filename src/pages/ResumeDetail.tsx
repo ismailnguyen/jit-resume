@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marked } from 'marked';
+import { computeCoverageScore } from "@/lib/analysis";
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,9 @@ const ResumeDetail = () => {
   const [markdown, setMarkdown] = useState("");
   const [originalMarkdown, setOriginalMarkdown] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [derivedSkills, setDerivedSkills] = useState<string[]>([]);
+  const [derivedKeywords, setDerivedKeywords] = useState<string[]>([]);
+  const [computedScore, setComputedScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -45,6 +49,17 @@ const ResumeDetail = () => {
         setMarkdown(data.markdown);
         setOriginalMarkdown(data.markdown);
         setJobDescription(data.jdRaw);
+        if (data.derived) {
+          setDerivedSkills(data.derived.skills || []);
+          setDerivedKeywords(data.derived.keywords || []);
+        }
+        // Compute on the fly for display (and to refresh on edits)
+        const { score, jdKeywords, resumeSkills } = computeCoverageScore(data.jdRaw, data.markdown);
+        setComputedScore(score);
+        if (!data.derived) {
+          setDerivedSkills(resumeSkills);
+          setDerivedKeywords(jdKeywords);
+        }
       } else {
         toast({
           title: "Resume Not Found",
@@ -71,17 +86,23 @@ const ResumeDetail = () => {
     try {
       const resumeData = await getResume(id);
       if (resumeData) {
+        const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, markdown);
         await saveResume(id, {
-          ...resumeData,
           markdown,
+          jdRaw: jobDescription,
+          derived: { skills: resumeSkills, keywords: jdKeywords },
         });
-        
+
         updateResume(id, {
           updatedAt: new Date().toISOString(),
+          score,
         });
-        
+
+        setDerivedSkills(resumeSkills);
+        setDerivedKeywords(jdKeywords);
+        setComputedScore(score);
         setOriginalMarkdown(markdown);
-        
+
         toast({
           title: "Saved!",
           description: "Your resume has been saved successfully.",
@@ -177,7 +198,12 @@ const ResumeDetail = () => {
           </Button>
           
           <div>
-            <h1 className="text-2xl font-bold">{resumeMeta.title}</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {resumeMeta.title}
+              {typeof (resumeMeta.score ?? computedScore) === 'number' && (
+                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% match</Badge>
+              )}
+            </h1>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <span>Created {new Date(resumeMeta.createdAt).toLocaleDateString()}</span>
               {resumeMeta.updatedAt !== resumeMeta.createdAt && (
@@ -263,6 +289,39 @@ const ResumeDetail = () => {
                   {jobDescription}
                 </pre>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(derivedSkills.length > 0 || derivedKeywords.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis</CardTitle>
+              <CardDescription>
+                Extracted skills and top keywords used for matching.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {derivedSkills.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium mb-2">Skills</div>
+                  <div className="flex flex-wrap gap-2">
+                    {derivedSkills.map((s) => (
+                      <Badge key={s} variant="outline">{s}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {derivedKeywords.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium mb-2">JD Keywords</div>
+                  <div className="flex flex-wrap gap-2">
+                    {derivedKeywords.map((k) => (
+                      <Badge key={k} variant="secondary">{k}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

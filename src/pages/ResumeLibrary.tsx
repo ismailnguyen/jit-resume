@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import { Badge } from "@/components/ui/badge";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
@@ -36,7 +37,12 @@ const ResumeLibrary = () => {
           {resumes.map(resume => (
             <Card key={resume.id}>
               <CardHeader>
-                <CardTitle>{resume.title}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>{resume.title}</CardTitle>
+                  {typeof resume.score === 'number' && (
+                    <Badge variant="secondary">{resume.score}% match</Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">
                 <div>
