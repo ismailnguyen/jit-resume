@@ -10,9 +10,21 @@ const LandingPage = () => {
       const y = window.scrollY || 0;
       document.documentElement.style.setProperty("--scrollY", `${y}`);
     };
+    const onMouseMove = (e: MouseEvent) => {
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      const nx = (e.clientX / w - 0.5) * 2; // -1..1
+      const ny = (e.clientY / h - 0.5) * 2; // -1..1
+      document.documentElement.style.setProperty("--mx", `${nx}`);
+      document.documentElement.style.setProperty("--my", `${ny}`);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("mousemove", onMouseMove);
+    };
   }, []);
 
   return (
@@ -60,19 +72,19 @@ const LandingPage = () => {
         </svg>
 
         {/* Parallax foreground elements */}
-        <img src="/logo.svg" alt="JIT Résumé" className="absolute left-1/2 -translate-x-1/2 top-12 w-16 h-16 opacity-90" style={{ transform: "translate(-50%, calc(var(--scrollY,0)*-0.05))" }} />
+        <img src="/logo.svg" alt="JIT Résumé" className="absolute left-1/2 top-12 w-16 h-16 opacity-90" style={{ transform: "translate(calc(-50% + (var(--mx,0) * 10px)), calc((var(--scrollY,0)*-0.05) + (var(--my,0) * 6px)))", willChange: "transform" }} />
 
         <div className="relative h-full flex items-center">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-4xl mx-auto">
-              <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight" style={{ transform: "translateY(calc(var(--scrollY,0)*-0.08))" }}>
+              <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight" style={{ transform: "translate3d(calc(var(--mx,0)*8px), calc((var(--scrollY,0)*-0.08) + (var(--my,0)*4px)), 0)", willChange: "transform" }}>
                 Just‑in‑Time Résumé
               </h1>
-              <p className="text-lg lg:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed" style={{ transform: "translateY(calc(var(--scrollY,0)*-0.06))" }}>
+              <p className="text-lg lg:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed" style={{ transform: "translate3d(calc(var(--mx,0)*6px), calc((var(--scrollY,0)*-0.06) + (var(--my,0)*3px)), 0)", willChange: "transform" }}>
                 Tailor your résumé to any job in seconds. ATS‑aware keyword analysis, HR‑style fit scoring, and gap coaching —
                 all privacy‑first in your browser.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center" style={{ transform: "translateY(calc(var(--scrollY,0)*-0.04))" }}>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center" style={{ transform: "translate3d(calc(var(--mx,0)*4px), calc((var(--scrollY,0)*-0.04) + (var(--my,0)*2px)), 0)", willChange: "transform" }}>
                 <Button
                   asChild
                   size="lg"
@@ -90,8 +102,8 @@ const LandingPage = () => {
 
         {/* Floating parallax shapes */}
         <div className="pointer-events-none" aria-hidden>
-          <div className="absolute -right-12 top-24 w-40 h-40 rounded-full bg-primary/10 blur-2xl" style={{ transform: "translateY(calc(var(--scrollY,0)*-0.07))" }} />
-          <div className="absolute -left-12 bottom-20 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl" style={{ transform: "translateY(calc(var(--scrollY,0)*-0.03))" }} />
+          <div className="absolute -right-12 top-24 w-40 h-40 rounded-full bg-primary/10 blur-2xl" style={{ transform: "translate3d(calc(var(--mx,0)*-12px), calc(var(--scrollY,0)*-0.07), 0)", willChange: "transform" }} />
+          <div className="absolute -left-12 bottom-20 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl" style={{ transform: "translate3d(calc(var(--mx,0)*8px), calc(var(--scrollY,0)*-0.03), 0)", willChange: "transform" }} />
         </div>
 
         {/* Subtle scroll cue */}
