@@ -52,7 +52,7 @@ const NewResume = () => {
   
   const [title, setTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [language, setLanguage] = useState<'auto' | 'en' | 'fr' | 'de' | 'es'>('auto');
+  const [language, setLanguage] = useState<'auto' | 'default' | 'en' | 'fr' | 'de' | 'es'>('auto');
   const [generating, setGenerating] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
@@ -167,13 +167,35 @@ const NewResume = () => {
         }
       }
 
+      // Resolve target language
+      const nameMap: Record<'en'|'fr'|'de'|'es', string> = { en: 'English', fr: 'French', de: 'German', es: 'Spanish' };
+      const detectLanguage = (text: string): 'en' | 'fr' | 'de' | 'es' => {
+        const t = ` ${text.toLowerCase()} `;
+        const scores: Record<'en'|'fr'|'de'|'es', number> = { en:0, fr:0, de:0, es:0 };
+        // English markers
+        [' the ',' and ',' with ',' for ',' years ',' experience ',' development ',' skills ',' team '].forEach(m=>{ if(t.includes(m)) scores.en++; });
+        // French markers
+        [' le ',' la ',' les ',' des ',' un ',' une ',' et ',' pour ',' avec ',' ans ',' expérience ',' développe',' ingénieur '].forEach(m=>{ if(t.includes(m)) scores.fr++; });
+        // German markers
+        [' der ',' die ',' das ',' und ',' mit ',' für ',' erfahrung ',' jahre ',' entwicklung ',' kenntnisse '].forEach(m=>{ if(t.includes(m)) scores.de++; });
+        // Spanish markers
+        [' el ',' la ',' los ',' las ',' y ',' con ',' para ',' años ',' experiencia ',' desarrollo '].forEach(m=>{ if(t.includes(m)) scores.es++; });
+        let best: 'en'|'fr'|'de'|'es' = settings.defaultLanguage;
+        let bestScore = -1;
+        (['en','fr','de','es'] as const).forEach(lang => { if (scores[lang] > bestScore) { best = lang; bestScore = scores[lang]; } });
+        return best;
+      };
+      const resolvedLang: 'en'|'fr'|'de'|'es' = language === 'auto' 
+        ? detectLanguage(jobDescription)
+        : (language === 'default' ? settings.defaultLanguage : language);
+
       // Generate resume
       const generatedMarkdown = await generateResume({
         apiKey: settings.openAIApiKey,
         model: settings.model,
         personalDetails,
         jobDescription,
-        language: language === 'auto' ? settings.defaultLanguage : language,
+        language: resolvedLang,
         pdfTheme: settings.pdfTheme,
         includeContactLinks: settings.includeContactLinks,
         anonymizeLocation: settings.anonymizeLocation,
@@ -205,7 +227,7 @@ const NewResume = () => {
         title: title.trim(),
         createdAt: now,
         updatedAt: now,
-        language,
+        language: resolvedLang,
         score,
         fitScore: fit?.score,
       };
@@ -284,7 +306,8 @@ const NewResume = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">Auto (from settings)</SelectItem>
+                  <SelectItem value="auto">Auto (detect from job description)</SelectItem>
+                  <SelectItem value="default">Default ({({ en:'English', fr:'French', de:'German', es:'Spanish' } as any)[settings.defaultLanguage]})</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="fr">French</SelectItem>
                   <SelectItem value="de">German</SelectItem>
