@@ -43,9 +43,7 @@ const AppShell = () => {
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-6 border-b">
             <Link to="/app" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">JR</span>
-              </div>
+              <img src="/logo.svg" alt="JIT Résumé" className="w-8 h-8 rounded-lg" />
               <span className="text-lg font-semibold">Just-in-Time Resumé</span>
             </Link>
             <Button
