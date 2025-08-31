@@ -173,6 +173,24 @@ export async function assessFit(args: AssessFitArgs): Promise<FitAnalysis> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
     throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to assess fit'}`);
+  }
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+  try {
+    const parsed = JSON.parse(content);
+    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? 0)));
+    return {
+      score,
+      summary: parsed.summary || '',
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+      gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
+      seniority: parsed.seniority === 'under' || parsed.seniority === 'exact' || parsed.seniority === 'over' ? parsed.seniority : undefined,
+    };
+  } catch {
+    // Fallback: try to extract a number, else default
+    const fallback: FitAnalysis = { score: 0, summary: content?.slice(0, 240) };
+    return fallback;
+  }
 }
 
 // Gap coaching: suggest truthful bullet improvements to address JD gaps
@@ -233,24 +251,5 @@ export async function coachGaps(args: GapCoachingArgs): Promise<GapCoachingResul
     };
   } catch {
     return { suggestions: [], guidance: content?.slice(0, 240) };
-  }
-}
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || "";
-  try {
-    const parsed = JSON.parse(content);
-    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? 0)));
-    return {
-      score,
-      summary: parsed.summary || '',
-      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-      gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
-      seniority: parsed.seniority === 'under' || parsed.seniority === 'exact' || parsed.seniority === 'over' ? parsed.seniority : undefined,
-    };
-  } catch {
-    // Fallback: try to extract a number, else default
-    const fallback: FitAnalysis = { score: 0, summary: content?.slice(0, 240) };
-    return fallback;
   }
 }
