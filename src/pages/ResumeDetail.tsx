@@ -215,9 +215,6 @@ const ResumeDetail = () => {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {resumeMeta.title}
-              {typeof (resumeMeta.score ?? computedScore) === 'number' && (
-                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% ATS</Badge>
-              )}
               {typeof (resumeMeta.fitScore ?? fitScore) === 'number' && (
                 <Badge variant="secondary">{(resumeMeta.fitScore ?? fitScore)}% Fit</Badge>
               )}
