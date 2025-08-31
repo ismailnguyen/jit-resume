@@ -154,9 +154,12 @@ const NewResume = () => {
       const inTokens = approxTokens(jobDescription) + approxTokens(personalDetails);
       const outTokens = Math.max(600, Math.min(2000, Math.round(approxTokens(personalDetails) * 0.5 + approxTokens(jobDescription) * 0.2)));
       const estCost = ((inTokens / 1000) * (settings.priceInPer1k || 0)) + ((outTokens / 1000) * (settings.priceOutPer1k || 0));
-      if (settings.costControlsEnabled && (settings.maxGenerationCost || 0) > 0) {
-        if (estCost > (settings.maxGenerationCost || 0)) {
-          const proceed = settings.showEstimateBeforeGenerate ? window.confirm(`Estimated cost $${estCost.toFixed(2)} exceeds your cap. Proceed?`) : false;
+      if (settings.costControlsEnabled) {
+        const cap = settings.maxGenerationCost || 0;
+        if (cap > 0 && estCost > cap) {
+          const proceed = settings.showEstimateBeforeGenerate
+            ? window.confirm(`Estimated cost $${estCost.toFixed(2)} exceeds your cap ($${cap.toFixed(2)}). Proceed?`)
+            : false;
           if (!proceed) {
             toast({ title: 'Generation cancelled', description: `Estimate $${estCost.toFixed(2)} is above your cap. Adjust in Settings.` });
             return;
