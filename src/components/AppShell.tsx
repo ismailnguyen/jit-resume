@@ -7,7 +7,8 @@ import {
   Library, 
   Plus, 
   Menu,
-  X
+  X,
+  LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const AppShell = () => {
   const location = useLocation();
 
   const navigation = [
+    { name: "Dashboard", href: "/app", icon: LayoutDashboard },
     { name: "New Resume", href: "/app/new", icon: Plus },
     { name: "Resume Library", href: "/app/library", icon: Library },
     { name: "Personal Details", href: "/app/personal", icon: User },
