@@ -11,38 +11,31 @@ const Dashboard = () => {
   const hasPersonalDetails = !!personalMeta;
   const resumeCount = resumesIndex.length;
 
+  // Compute first-run steps and which remain
+  const steps = [
+    { key: 'api', title: 'Add API Key', done: !!settings.openAIApiKey, href: '/app/settings', description: 'Enable AI generation' },
+    { key: 'personal', title: 'Add Personal Details', done: !!personalMeta, href: '/app/personal', description: 'Create your canonical resume' },
+    { key: 'first', title: 'Generate Your First Resume', done: resumesIndex.length > 0, href: '/app/new', description: 'Paste a JD and go' },
+  ];
+  const remaining = steps.filter(s => !s.done);
+  const showQuickStart = !firstRunSeen && remaining.length > 0;
+
   return (
   <div className="p-6 w-full">
       {/* First-run Guide */}
-      {!firstRunSeen && (
+      {showQuickStart && (
         <div className="mb-6 rounded-lg border shadow-medium bg-background">
           <div className="p-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Quick Start</h2>
-              <p className="text-sm text-muted-foreground">Get set up in three steps.</p>
+              <p className="text-sm text-muted-foreground">{remaining.length} step{remaining.length>1?'s':''} to finish setup.</p>
             </div>
             <button className="text-sm text-muted-foreground hover:underline" onClick={() => setFirstRunSeen(true)}>Dismiss</button>
           </div>
           <div className="px-4 pb-4 grid gap-3 md:grid-cols-3">
-            <GuideStep
-              title="Add API Key"
-              done={!!settings.openAIApiKey}
-              href="/app/settings"
-              description="Enable AI generation"
-            />
-            <GuideStep
-              title="Add Personal Details"
-              done={!!personalMeta}
-              href="/app/personal"
-              description="Create your canonical resume"
-            />
-            <GuideStep
-              title="Generate Your First Resume"
-              done={resumesIndex.length > 0}
-              href="/app/new"
-              description="Paste a JD and go"
-              onClick={() => setFirstRunSeen(true)}
-            />
+            {remaining.map((s) => (
+              <GuideStep key={s.key} title={s.title} description={s.description} href={s.href} done={s.done} />
+            ))}
           </div>
         </div>
       )}
