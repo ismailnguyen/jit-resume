@@ -18,11 +18,12 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/60">
       {/* Animated full-screen hero */}
-      <section className="relative h-[100svh] overflow-hidden">
+      <section className="relative h-[100svh] w-screen overflow-hidden">
         {/* Background animated SVG */}
         <svg
           className="absolute inset-0 w-full h-full"
           viewBox="0 0 1440 900"
+          preserveAspectRatio="xMidYMid slice"
           aria-hidden
         >
           <defs>
