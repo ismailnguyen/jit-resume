@@ -201,7 +201,7 @@ const ResumeDetail = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {resumeMeta.title}
               {typeof (resumeMeta.score ?? computedScore) === 'number' && (
-                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% match</Badge>
+                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% keywords match</Badge>
               )}
             </h1>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">

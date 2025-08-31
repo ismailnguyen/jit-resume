@@ -40,7 +40,7 @@ const ResumeLibrary = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle>{resume.title}</CardTitle>
                   {typeof resume.score === 'number' && (
-                    <Badge variant="secondary">{resume.score}% match</Badge>
+                    <Badge variant="secondary">{resume.score}% keywords match</Badge>
                   )}
                 </div>
               </CardHeader>
