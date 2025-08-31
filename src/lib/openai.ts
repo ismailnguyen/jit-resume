@@ -93,3 +93,81 @@ export async function testApiKey(apiKey: string): Promise<boolean> {
     return false;
   }
 }
+
+// --- Fit assessment (HR/Talent Acquisition style) ---
+export interface AssessFitArgs {
+  apiKey: string;
+  model: string;
+  jobDescription: string;
+  personalDetails: string; // canonical résumé
+  generatedResume?: string; // tailored résumé (optional)
+}
+
+export interface FitAnalysis {
+  score: number; // 0-100 probability-like fit score
+  summary?: string;
+  strengths?: string[];
+  gaps?: string[];
+  seniority?: 'under' | 'exact' | 'over';
+}
+
+const FIT_SYSTEM_PROMPT = `You are a senior Talent Acquisition Partner. Assess candidate-job fit fairly and conservatively.
+
+Rules:
+- Base your judgment ONLY on the provided candidate resume(s) and job description.
+- Penalize missing must-haves, required years, certifications, domain/regulatory requirements, location/clearance constraints.
+- Consider seniority alignment (underqualified, exact, overqualified) and practical skill breadth-depth.
+- Use qualitative judgment; do not hallucinate facts. If info is missing, treat it as a gap.
+- Output JSON only, no narration.
+
+JSON schema:
+{
+  "score": number (0-100, probability the candidate gets a recruiter screen for this JD),
+  "summary": string (2-3 sentences on overall fit),
+  "strengths": string[],
+  "gaps": string[],
+  "seniority": "under" | "exact" | "over"
+}`;
+
+export async function assessFit(args: AssessFitArgs): Promise<FitAnalysis> {
+  const userPrompt = `# Job Description\n${args.jobDescription}\n\n# Candidate Canonical Resume (Markdown)\n${args.personalDetails}\n\n# Tailored Resume (Markdown)\n${args.generatedResume || '(not provided)'}\n\n# Task\nReturn a JSON object with fields: score, summary, strengths, gaps, seniority.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        { role: "system", content: FIT_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to assess fit'}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+  try {
+    const parsed = JSON.parse(content);
+    const score = Math.max(0, Math.min(100, Math.round(parsed.score ?? 0)));
+    return {
+      score,
+      summary: parsed.summary || '',
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+      gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
+      seniority: parsed.seniority === 'under' || parsed.seniority === 'exact' || parsed.seniority === 'over' ? parsed.seniority : undefined,
+    };
+  } catch {
+    // Fallback: try to extract a number, else default
+    const fallback: FitAnalysis = { score: 0, summary: content?.slice(0, 240) };
+    return fallback;
+  }
+}

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { generateResume } from "@/lib/openai";
+import { generateResume, assessFit } from "@/lib/openai";
 import { saveResume } from "@/lib/storage";
 import { getPersonalDetails } from "@/lib/storage";
 import { nanoid } from "nanoid";
@@ -123,6 +123,21 @@ const NewResume = () => {
 
       const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, generatedMarkdown);
 
+      // Assess HR-style fit via LLM (best-effort; non-blocking on failure)
+      let fit: { score: number; summary?: string; strengths?: string[]; gaps?: string[]; seniority?: 'under' | 'exact' | 'over' } | undefined = undefined;
+      try {
+        const fitAnalysis = await assessFit({
+          apiKey: settings.openAIApiKey,
+          model: settings.model,
+          jobDescription,
+          personalDetails,
+          generatedResume: generatedMarkdown,
+        });
+        fit = fitAnalysis;
+      } catch (e) {
+        console.warn('Fit assessment failed:', e);
+      }
+
       // Create resume record
       const resumeId = nanoid();
       const now = new Date().toISOString();
@@ -134,6 +149,7 @@ const NewResume = () => {
         updatedAt: now,
         language,
         score,
+        fitScore: fit?.score,
       };
 
       // Save to storage
@@ -141,6 +157,7 @@ const NewResume = () => {
         markdown: generatedMarkdown,
         jdRaw: jobDescription,
         derived: { skills: resumeSkills, keywords: jdKeywords },
+        fit,
       });
 
       // Add to store

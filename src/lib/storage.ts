@@ -33,6 +33,13 @@ interface JITDatabase extends DBSchema {
         skills: string[];
         keywords: string[];
       };
+      fit?: {
+        score: number;
+        summary?: string;
+        strengths?: string[];
+        gaps?: string[];
+        seniority?: 'under' | 'exact' | 'over';
+      };
     };
   };
 }
@@ -83,6 +90,13 @@ export async function saveResume(id: string, data: {
   markdown: string;
   jdRaw: string;
   derived: { skills: string[]; keywords: string[] };
+  fit?: {
+    score: number;
+    summary?: string;
+    strengths?: string[];
+    gaps?: string[];
+    seniority?: 'under' | 'exact' | 'over';
+  };
 }) {
   try {
     const database = await getDB();

@@ -39,9 +39,14 @@ const ResumeLibrary = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{resume.title}</CardTitle>
-                  {typeof resume.score === 'number' && (
-                    <Badge variant="secondary">{resume.score}% keywords match</Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {typeof resume.score === 'number' && (
+                      <Badge variant="secondary">{resume.score}% ATS</Badge>
+                    )}
+                    {typeof resume.fitScore === 'number' && (
+                      <Badge variant="secondary">{resume.fitScore}% Fit</Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex items-center justify-between">

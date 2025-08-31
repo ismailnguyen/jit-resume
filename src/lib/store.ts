@@ -22,6 +22,7 @@ export interface ResumeMeta {
   updatedAt: string;
   language: 'auto' | 'en' | 'fr' | 'de' | 'es';
   score?: number;
+  fitScore?: number;
 }
 
 interface Store {

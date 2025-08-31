@@ -5,17 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { getResume, saveResume } from "@/lib/storage";
+import { getResume, saveResume, getPersonalDetails } from "@/lib/storage";
 import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marked } from 'marked';
 import { computeCoverageScore } from "@/lib/analysis";
+import { assessFit } from "@/lib/openai";
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { resumesIndex, updateResume } = useStore();
+  const { resumesIndex, updateResume, settings } = useStore();
   const { toast } = useToast();
   
   const [markdown, setMarkdown] = useState("");
@@ -24,6 +25,12 @@ const ResumeDetail = () => {
   const [derivedSkills, setDerivedSkills] = useState<string[]>([]);
   const [derivedKeywords, setDerivedKeywords] = useState<string[]>([]);
   const [computedScore, setComputedScore] = useState<number | null>(null);
+  const [fitScore, setFitScore] = useState<number | null>(null);
+  const [fitSummary, setFitSummary] = useState<string>("");
+  const [fitStrengths, setFitStrengths] = useState<string[]>([]);
+  const [fitGaps, setFitGaps] = useState<string[]>([]);
+  const [fitSeniority, setFitSeniority] = useState<'under' | 'exact' | 'over' | null>(null);
+  const [fitLoading, setFitLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -52,6 +59,13 @@ const ResumeDetail = () => {
         if (data.derived) {
           setDerivedSkills(data.derived.skills || []);
           setDerivedKeywords(data.derived.keywords || []);
+        }
+        if (data.fit) {
+          setFitScore(typeof data.fit.score === 'number' ? data.fit.score : null);
+          setFitSummary(data.fit.summary || "");
+          setFitStrengths(Array.isArray(data.fit.strengths) ? data.fit.strengths : []);
+          setFitGaps(Array.isArray(data.fit.gaps) ? data.fit.gaps : []);
+          setFitSeniority((data.fit.seniority as any) ?? null);
         }
         // Compute on the fly for display (and to refresh on edits)
         const { score, jdKeywords, resumeSkills } = computeCoverageScore(data.jdRaw, data.markdown);
@@ -91,6 +105,7 @@ const ResumeDetail = () => {
           markdown,
           jdRaw: jobDescription,
           derived: { skills: resumeSkills, keywords: jdKeywords },
+          fit: (resumeData as any).fit,
         });
 
         updateResume(id, {
@@ -201,7 +216,10 @@ const ResumeDetail = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {resumeMeta.title}
               {typeof (resumeMeta.score ?? computedScore) === 'number' && (
-                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% keywords match</Badge>
+                <Badge variant="secondary">{(resumeMeta.score ?? computedScore)}% ATS</Badge>
+              )}
+              {typeof (resumeMeta.fitScore ?? fitScore) === 'number' && (
+                <Badge variant="secondary">{(resumeMeta.fitScore ?? fitScore)}% Fit</Badge>
               )}
             </h1>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -246,6 +264,95 @@ const ResumeDetail = () => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Fit Analysis</CardTitle>
+                <CardDescription>Assessment of candidate fit.</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!settings.openAIApiKey) {
+                    toast({ title: 'API Key Required', description: 'Set your OpenAI API key in Settings first.', variant: 'destructive' });
+                    return;
+                  }
+                  if (!id) return;
+                  setFitLoading(true);
+                  try {
+                    const canonical = await getPersonalDetails();
+                    const result = await assessFit({
+                      apiKey: settings.openAIApiKey,
+                      model: settings.model,
+                      jobDescription,
+                      personalDetails: canonical || '',
+                      generatedResume: markdown,
+                    });
+                    setFitScore(result.score ?? 0);
+                    setFitSummary(result.summary || '');
+                    setFitStrengths(result.strengths || []);
+                    setFitGaps(result.gaps || []);
+                    setFitSeniority((result.seniority as any) ?? null);
+
+                    const current = await getResume(id);
+                    if (current) {
+                      await saveResume(id, {
+                        markdown,
+                        jdRaw: jobDescription,
+                        derived: current.derived || { skills: [], keywords: [] },
+                        fit: {
+                          score: result.score ?? 0,
+                          summary: result.summary || '',
+                          strengths: result.strengths || [],
+                          gaps: result.gaps || [],
+                          seniority: (result.seniority as any) ?? undefined,
+                        },
+                      });
+                      updateResume(id, { updatedAt: new Date().toISOString(), fitScore: result.score ?? 0 });
+                    }
+                  } catch (e) {
+                    toast({ title: 'Fit Scoring Failed', description: e instanceof Error ? e.message : 'Could not compute fit.', variant: 'destructive' });
+                  } finally {
+                    setFitLoading(false);
+                  }
+                }}
+                disabled={fitLoading}
+              >
+                {fitLoading ? 'Scoring...' : 'Re-score Fit'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {typeof (resumeMeta.fitScore ?? fitScore) === 'number' && (
+              <div className="text-sm">
+                <span className="font-medium">Fit Score:</span> {(resumeMeta.fitScore ?? fitScore)}%
+                {fitSeniority && <span className="ml-2 text-muted-foreground">(Seniority: {fitSeniority})</span>}
+              </div>
+            )}
+            {fitSummary && (
+              <div className="text-sm text-muted-foreground">{fitSummary}</div>
+            )}
+            {fitStrengths.length > 0 && (
+              <div>
+                <div className="text-sm font-medium mb-1">Strengths</div>
+                <ul className="list-disc pl-6 text-sm space-y-1">
+                  {fitStrengths.map((s, i) => (<li key={i}>{s}</li>))}
+                </ul>
+              </div>
+            )}
+            {fitGaps.length > 0 && (
+              <div>
+                <div className="text-sm font-medium mb-1">Gaps</div>
+                <ul className="list-disc pl-6 text-sm space-y-1">
+                  {fitGaps.map((g, i) => (<li key={i}>{g}</li>))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <CardTitle>Resume Editor</CardTitle>
@@ -275,28 +382,10 @@ const ResumeDetail = () => {
           </CardContent>
         </Card>
 
-        {jobDescription && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Job Description</CardTitle>
-              <CardDescription>
-                The job description used to generate this resume.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <pre className="whitespace-pre-wrap text-sm font-mono">
-                  {jobDescription}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {(derivedSkills.length > 0 || derivedKeywords.length > 0) && (
           <Card>
             <CardHeader>
-              <CardTitle>Analysis</CardTitle>
+              <CardTitle>Keyword Analysis</CardTitle>
               <CardDescription>
                 Extracted skills and top keywords used for matching.
               </CardDescription>
@@ -325,6 +414,25 @@ const ResumeDetail = () => {
             </CardContent>
           </Card>
         )}
+
+        {jobDescription && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Job Description</CardTitle>
+              <CardDescription>
+                The job description used to generate this resume.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <pre className="whitespace-pre-wrap text-sm font-mono">
+                  {jobDescription}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
     </div>
   );
