@@ -1,8 +1,10 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "jit-resume",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "JIT Résumé — Tailored, ATS‑friendly resume generation with keyword analysis, fit scoring, and coaching. Privacy‑first, browser‑based.",
+  "author": "JIT Résumé",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
