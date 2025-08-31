@@ -72,22 +72,35 @@ const NewResume = () => {
     if (!importUrl.trim()) return;
     setImporting(true);
     try {
-      const res = await fetch(importUrl, { mode: 'cors' as RequestMode });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const html = await res.text();
+      // Attempt direct fetch (requires CORS on source)
+      const directRes = await fetch(importUrl, { mode: 'cors' as RequestMode });
+      if (!directRes.ok) throw new Error(`HTTP ${directRes.status}`);
+      const html = await directRes.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      // Remove script/style/noscript
       doc.querySelectorAll('script, style, noscript').forEach(el => el.remove());
       const text = doc.body?.innerText || doc.body?.textContent || '';
       if (!text.trim()) throw new Error('No text content extracted');
       setJobDescription(text.trim());
       toast({ title: 'Imported', description: 'Job description imported from URL.' });
     } catch (e) {
-      toast({
-        title: 'Import Failed',
-        description: e instanceof Error ? e.message : 'Could not import from URL (CORS may block). Try copy/paste instead.',
-        variant: 'destructive',
-      });
+      // Transparent fallback: try CORS-friendly text extraction proxy
+      try {
+        toast({ title: 'Extracting…', description: 'This may take a bit longer. Please wait…' });
+        const proxyUrl = 'https://r.jina.ai/http://' + importUrl.replace(/^https?:\/\//, '');
+        const proxied = await fetch(proxyUrl, { method: 'GET' });
+        if (!proxied.ok) throw new Error(`HTTP ${proxied.status}`);
+        const content = await proxied.text();
+        const cleaned = content.replace(/\s+$/, '').trim();
+        if (!cleaned) throw new Error('No text content extracted');
+        setJobDescription(cleaned);
+        toast({ title: 'Imported', description: 'We extracted the job description. Please review and clean it if needed.' });
+      } catch (err) {
+        toast({
+          title: 'Import Failed',
+          description: 'Could not import from URL. Try copy/paste or upload PDF/Text.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setImporting(false);
     }
