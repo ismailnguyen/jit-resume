@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marked } from 'marked';
 import { computeCoverageScore, canonicalizeToken } from "@/lib/analysis";
 import { assessFit, coachGaps } from "@/lib/openai";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +43,7 @@ const ResumeDetail = () => {
   const [editorMode, setEditorMode] = useState<'preview' | 'edit'>('preview');
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (id) {
@@ -253,8 +255,8 @@ const ResumeDetail = () => {
   }
 
   return (
-  <div className="p-6 max-w-6xl mx-auto space-y-6" id="resume-content">
-      <div className="flex items-center justify-between">
+  <div className="px-3 py-4 sm:p-6 max-w-6xl mx-auto space-y-6" id="resume-content">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/app/library")}>
             <ArrowLeft className="h-4 w-4" />
@@ -276,7 +278,7 @@ const ResumeDetail = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <Button variant="outline" onClick={handleCopyMarkdown}>
             <Copy className="h-4 w-4 mr-1" />
             Copy
@@ -483,12 +485,15 @@ const ResumeDetail = () => {
                   Edit your tailored resume. Changes are saved locally on your device.
                 </CardDescription>
               </div>
-              <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as 'preview' | 'edit')}>
-                <TabsList>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                  <TabsTrigger value="edit">Edit</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              {/* Show preview/edit toggles only on mobile/tablet */}
+              <div className="lg:hidden">
+                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as 'preview' | 'edit')}>
+                  <TabsList>
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <TabsTrigger value="edit">Edit</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -501,7 +506,8 @@ const ResumeDetail = () => {
                   preview={editorMode}
                   hideToolbar={false}
                   data-color-mode="light"
-                  height={500}
+                  height={isMobile ? 560 : 520}
+                  style={{ fontSize: isMobile ? 16 : 14 }}
                 />
               </div>
             </div>
@@ -516,6 +522,7 @@ const ResumeDetail = () => {
                   hideToolbar={false}
                   data-color-mode="light"
                   height={600}
+                  style={{ fontSize: 14 }}
                 />
               </div>
               <div>
@@ -526,6 +533,7 @@ const ResumeDetail = () => {
                   hideToolbar={true}
                   data-color-mode="light"
                   height={600}
+                  style={{ fontSize: 14 }}
                 />
               </div>
             </div>

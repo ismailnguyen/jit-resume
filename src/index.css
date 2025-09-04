@@ -170,6 +170,22 @@ All colors MUST be HSL.
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
   }
+
+  /* Mobile readability tweaks */
+  @media (max-width: 768px) {
+    /* Increase editor and preview font sizes for better legibility */
+    .w-md-editor,
+    .wmde-markdown {
+      font-size: 16px !important;
+    }
+    /* Slightly larger toolbar hit targets */
+    .w-md-editor .w-md-editor-toolbar {
+      padding: 6px 8px;
+    }
+    .w-md-editor .w-md-editor-toolbar li > button {
+      padding: 6px;
+    }
+  }
 }
 
 @layer utilities {
