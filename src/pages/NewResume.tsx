@@ -12,7 +12,7 @@ import { generateResume, assessFit, coachGaps } from "@/lib/openai";
 import { saveResume } from "@/lib/storage";
 import { getPersonalDetails } from "@/lib/storage";
 import { nanoid } from "nanoid";
-import { FileText, Wand2, Sparkles } from "lucide-react";
+import { FileText, Wand2, Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { computeCoverageScore, smartReorder } from "@/lib/analysis";
 
 const NewResume = () => {
@@ -26,6 +26,7 @@ const NewResume = () => {
   const [location, setLocation] = useState("");
   const [language, setLanguage] = useState<'auto' | 'default' | 'en' | 'fr' | 'de' | 'es'>('auto');
   const [generating, setGenerating] = useState(false);
+  const [genSteps, setGenSteps] = useState<{ label: string; status: 'running'|'done'|'error'; note?: string }[]>([]);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [jdSourceUrl, setJdSourceUrl] = useState("");
@@ -129,6 +130,25 @@ const NewResume = () => {
     }
 
     setGenerating(true);
+    setGenSteps([]);
+    const beginStep = (label: string) => setGenSteps(prev => {
+      const finished = prev.map(s => s.status === 'running' ? { ...s, status: 'done' } : s);
+      return [...finished, { label, status: 'running' }];
+    });
+    const completeStep = (note?: string) => setGenSteps(prev => {
+      const idx = prev.findIndex(s => s.status === 'running');
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], status: 'done', note };
+      return next;
+    });
+    const failStep = (note?: string) => setGenSteps(prev => {
+      const idx = prev.findIndex(s => s.status === 'running');
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], status: 'error', note };
+      return next;
+    });
     
     try {
       // Get personal details
@@ -182,11 +202,14 @@ const NewResume = () => {
         (['en','fr','de','es'] as const).forEach(lang => { if (scores[lang] > bestScore) { best = lang; bestScore = scores[lang]; } });
         return best;
       };
+      beginStep('Analyzing inputs');
       const resolvedLang: 'en'|'fr'|'de'|'es' = language === 'auto' 
         ? detectLanguage(jobDescription)
         : (language === 'default' ? settings.defaultLanguage : language);
+      completeStep(`Language: ${resolvedLang}`);
 
       // Generate resume
+      beginStep('Generating tailored resume');
       const generatedMarkdown = await generateResume({
         apiKey: settings.openAIApiKey,
         model: settings.model,
@@ -197,17 +220,21 @@ const NewResume = () => {
         includeContactLinks: settings.includeContactLinks,
         anonymizeLocation: settings.anonymizeLocation,
       });
+      completeStep();
 
       // Compute JD keywords, then smartly reorder bullets by relevance
+      beginStep('Reordering bullets by relevance');
       const initialCoverage = computeCoverageScore(jobDescription, generatedMarkdown, { weights: settings.atsWeights });
       const reorderedMarkdown = smartReorder(generatedMarkdown, initialCoverage.jdKeywords);
       // Recompute coverage on the final (reordered) markdown
       const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, reorderedMarkdown, { weights: settings.atsWeights });
+      completeStep(`${jdKeywords.length} JD keywords matched`);
 
       // Assess HR-style fit via LLM (best-effort; non-blocking on failure)
       let fit: { score: number; summary?: string; strengths?: string[]; gaps?: string[]; seniority?: 'under' | 'exact' | 'over' } | undefined = undefined;
       let coaching: { suggestions: string[]; guidance?: string } | undefined = undefined;
       try {
+        beginStep('Scoring candidate fit');
         const fitAnalysis = await assessFit({
           apiKey: settings.openAIApiKey,
           model: settings.model,
@@ -216,6 +243,8 @@ const NewResume = () => {
           generatedResume: reorderedMarkdown,
         });
         fit = fitAnalysis;
+        completeStep(`Fit score: ${fit?.score ?? 0}%`);
+        beginStep('Generating gap coaching');
         // Also generate gap coaching suggestions
         const coachingResult = await coachGaps({
           apiKey: settings.openAIApiKey,
@@ -225,8 +254,10 @@ const NewResume = () => {
           generatedResume: reorderedMarkdown,
         });
         coaching = coachingResult;
+        completeStep(`${(coaching?.suggestions || []).length} suggestions`);
       } catch (e) {
-        console.warn('Fit assessment failed:', e);
+        console.warn('Fit/coaching failed:', e);
+        failStep('Fit/coaching unavailable');
       }
 
       // Create resume record
@@ -247,6 +278,7 @@ const NewResume = () => {
       };
 
       // Save to storage
+      beginStep('Saving to library');
       await saveResume(resumeId, {
         markdown: reorderedMarkdown,
         jdRaw: jobDescription,
@@ -259,6 +291,7 @@ const NewResume = () => {
           jdUrl: jdSourceUrl || undefined,
         },
       });
+      completeStep();
 
       // Add to store
       addResume(resumeMeta);
@@ -273,6 +306,7 @@ const NewResume = () => {
       
     } catch (error) {
       console.error('Resume generation error:', error);
+      setGenSteps(prev => prev.length ? prev : [{ label: 'Generation failed', status: 'error', note: (error as Error)?.message }]);
       toast({
         title: "Generation Failed",
         description: error instanceof Error ? error.message : "Failed to generate resume. Please try again.",
@@ -282,6 +316,41 @@ const NewResume = () => {
       setGenerating(false);
     }
   };
+
+  // Loading pane replacing the whole form while generating
+  if (generating) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Generating Your Tailored Resume
+            </CardTitle>
+            <CardDescription>Please wait a moment while we analyze, generate, and optimize your resume.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {genSteps.map((s, i) => (
+                <div key={i} className="flex items-start gap-3 text-sm">
+                  {s.status === 'running' && <Loader2 className="h-4 w-4 mt-0.5 animate-spin" />}
+                  {s.status === 'done' && <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-600" />}
+                  {s.status === 'error' && <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600" />}
+                  <div>
+                    <div className="font-medium">{s.label}</div>
+                    {s.note && <div className="text-muted-foreground">{s.note}</div>}
+                  </div>
+                </div>
+              ))}
+              {genSteps.length === 0 && (
+                <div className="text-sm text-muted-foreground">Starting…</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
