@@ -35,8 +35,8 @@ const AppShell = () => {
   }, []);
 
   const navigation = [
-    { name: "Dashboard", href: "/app", icon: LayoutDashboard },
     { name: "New Resume", href: "/app/new", icon: Plus },
+    { name: "Dashboard", href: "/app", icon: LayoutDashboard },
     { name: "Resume Library", href: "/app/library", icon: Library },
     { name: "Personal Details", href: "/app/personal", icon: User },
     { name: "Settings", href: "/app/settings", icon: Settings },
@@ -87,7 +87,7 @@ const AppShell = () => {
                   className={cn(
                     "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth motion-reduce:transition-none motion-reduce:transform-none",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-glow"
+                      ? "border-2 border-primary text-muted-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                   onClick={() => setSidebarOpen(false)}
@@ -128,12 +128,21 @@ const AppShell = () => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/app/new">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Resume
+              {location.pathname !== '/app/new' && (
+                <Link
+                  to="/app/new"
+                  className={cn(
+                    "relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold",
+                    "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-glow",
+                    "transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:from-primary hover:to-primary/95",
+                    "motion-reduce:transition-none"
+                  )}
+                >
+                  <span className="absolute inset-0 rounded-xl border-2 border-dotted border-white/40 opacity-70 pointer-events-none animate-pulse" />
+                  <Plus className="h-4 w-4" />
+                  <span>New Resume</span>
                 </Link>
-              </Button>
+              )}
             </div>
           </div>
         </div>
