@@ -33,6 +33,9 @@ export interface ResumeMeta {
   fitScore?: number;
   tags?: string[];
   applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
+  company?: string;
+  location?: string;
+  jdUrl?: string;
 }
 
 interface Store {

@@ -105,7 +105,14 @@ const ResumeLibrary = () => {
             <Card key={resume.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{resume.title}</CardTitle>
+                  <div>
+                    <CardTitle>{resume.title}</CardTitle>
+                    {(resume.company || resume.location) && (
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {[resume.company, resume.location].filter(Boolean).join(' • ')}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{statusLabel(getEffectiveStatus(resume.applicationStatus))}</Badge>
                     {typeof resume.fitScore === 'number' && (

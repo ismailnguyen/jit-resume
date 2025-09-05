@@ -43,6 +43,8 @@ const ResumeDetail = () => {
   // Default to preview mode so users see the rendered résumé first
   const [editorMode, setEditorMode] = useState<'preview' | 'edit'>('preview');
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>('not_applied');
+  const [company, setCompany] = useState<string | undefined>(undefined);
+  const [location, setLocation] = useState<string | undefined>(undefined);
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
   const isMobile = useIsMobile();
@@ -67,6 +69,8 @@ const ResumeDetail = () => {
         const rawStatus = data.meta?.applicationStatus;
         const allowed: ApplicationStatus[] = ['applied', 'not_applied', 'unsuccessful', 'successful'];
         setApplicationStatus(allowed.includes(rawStatus as any) ? (rawStatus as ApplicationStatus) : 'not_applied');
+        setCompany(data.meta?.company || resumeMeta?.company);
+        setLocation(data.meta?.location || resumeMeta?.location);
         if (data.derived) {
           setDerivedSkills(data.derived.skills || []);
           setDerivedKeywords(data.derived.keywords || []);
@@ -315,6 +319,11 @@ const ResumeDetail = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {resumeMeta.title}
             </h1>
+            {(company || location) && (
+              <div className="text-sm text-muted-foreground">
+                {[company, location].filter(Boolean).join(' • ')}
+              </div>
+            )}
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <span>Created {new Date(resumeMeta.createdAt).toLocaleDateString()}</span>
               {resumeMeta.updatedAt !== resumeMeta.createdAt && (

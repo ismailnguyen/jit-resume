@@ -46,6 +46,9 @@ interface JITDatabase extends DBSchema {
       };
       meta?: {
         applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
+        company?: string;
+        location?: string;
+        jdUrl?: string;
       };
     };
   };
@@ -110,6 +113,9 @@ export async function saveResume(id: string, data: {
   };
   meta?: {
     applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
+    company?: string;
+    location?: string;
+    jdUrl?: string;
   };
 }) {
   try {

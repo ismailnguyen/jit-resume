@@ -183,7 +183,12 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium">{resume.title}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      {(resume.company || resume.location) && (
+                        <div className="text-xs text-muted-foreground">
+                          {[resume.company, resume.location].filter(Boolean).join(' • ')}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
                         Created {new Date(resume.createdAt).toLocaleDateString()}
                       </p>
                     </div>

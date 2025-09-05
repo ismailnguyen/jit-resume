@@ -22,10 +22,13 @@ const NewResume = () => {
   
   const [title, setTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [company, setCompany] = useState("");
+  const [location, setLocation] = useState("");
   const [language, setLanguage] = useState<'auto' | 'default' | 'en' | 'fr' | 'de' | 'es'>('auto');
   const [generating, setGenerating] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
+  const [jdSourceUrl, setJdSourceUrl] = useState("");
 
   const importFromUrl = async () => {
     if (!importUrl.trim()) return;
@@ -40,6 +43,7 @@ const NewResume = () => {
       const text = doc.body?.innerText || doc.body?.textContent || '';
       if (!text.trim()) throw new Error('No text content extracted');
       setJobDescription(text.trim());
+      setJdSourceUrl(importUrl.trim());
       toast({ title: 'Imported', description: 'Job description imported from URL.' });
     } catch (e) {
       // Transparent fallback: try CORS-friendly text extraction proxy
@@ -52,6 +56,7 @@ const NewResume = () => {
         const cleaned = content.replace(/\s+$/, '').trim();
         if (!cleaned) throw new Error('No text content extracted');
         setJobDescription(cleaned);
+        setJdSourceUrl(importUrl.trim());
         toast({ title: 'Imported', description: 'We extracted the job description. Please review and clean it if needed.' });
       } catch (err) {
         toast({
@@ -206,6 +211,9 @@ const NewResume = () => {
         language: resolvedLang,
         score,
         fitScore: fit?.score,
+        company: company.trim() || undefined,
+        location: location.trim() || undefined,
+        jdUrl: jdSourceUrl || undefined,
       };
 
       // Save to storage
@@ -215,6 +223,11 @@ const NewResume = () => {
         derived: { skills: resumeSkills, keywords: jdKeywords },
         fit,
         coaching,
+        meta: {
+          company: company.trim() || undefined,
+          location: location.trim() || undefined,
+          jdUrl: jdSourceUrl || undefined,
+        },
       });
 
       // Add to store
@@ -261,27 +274,47 @@ const NewResume = () => {
               <FileText className="h-5 w-5 mr-2" />
               Resume Details
             </CardTitle>
-            <CardDescription>
-              Give your resume a descriptive title and target language.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardDescription>
+            Give your resume a descriptive title and target language.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Resume Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Senior Frontend Developer at TechCorp"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="title">Resume Title</Label>
+              <Label htmlFor="company">Company</Label>
               <Input
-                id="title"
-                placeholder="e.g., Senior Frontend Developer at TechCorp"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                id="company"
+                placeholder="e.g., TechCorp Inc."
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="language">Target Language</Label>
-              <Select value={language} onValueChange={(value: any) => setLanguage(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                placeholder="e.g., San Francisco, CA (Hybrid)"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="language">Target Language</Label>
+            <Select value={language} onValueChange={(value: any) => setLanguage(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="auto">Auto (detect from job description)</SelectItem>
                   <SelectItem value="default">Default ({({ en:'English', fr:'French', de:'German', es:'Spanish' } as any)[settings.defaultLanguage]})</SelectItem>
