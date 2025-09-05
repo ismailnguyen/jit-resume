@@ -41,7 +41,7 @@ interface JITDatabase extends DBSchema {
         seniority?: 'under' | 'exact' | 'over';
       };
       meta?: {
-        applicationStatus?: 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
+        applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
       };
     };
   };
@@ -101,7 +101,7 @@ export async function saveResume(id: string, data: {
     seniority?: 'under' | 'exact' | 'over';
   };
   meta?: {
-    applicationStatus?: 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
+    applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
   };
 }) {
   try {

@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
@@ -19,10 +20,30 @@ const ResumeLibrary = () => {
   const allTags = Array.from(new Set(resumes.flatMap(r => r.tags || []))).sort();
   const [activeTags, setActiveTags] = useState<string[]>([]);
 
+  type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('all');
+
+  const statusLabel = (s: ApplicationStatus) => {
+    switch (s) {
+      case 'applied': return 'Applied';
+      case 'not_applied': return 'Not Applied';
+      case 'unsuccessful': return 'Unsuccessful';
+      case 'successful': return 'Successful';
+      default: return 'Not Applied';
+    }
+  };
+
+  const getEffectiveStatus = (s?: string | null): ApplicationStatus => {
+    const allowed: ApplicationStatus[] = ['applied', 'not_applied', 'unsuccessful', 'successful'];
+    return allowed.includes(s as any) ? (s as ApplicationStatus) : 'not_applied';
+  };
+
   const filtered = resumes.filter(r => {
     const matchesQuery = !query.trim() || r.title.toLowerCase().includes(query.toLowerCase());
     const matchesTags = activeTags.length === 0 || (r.tags || []).some(t => activeTags.includes(t));
-    return matchesQuery && matchesTags;
+    const effectiveStatus: ApplicationStatus = getEffectiveStatus(r.applicationStatus);
+    const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
+    return matchesQuery && matchesTags && matchesStatus;
   });
 
   const handleView = (id: string) => {
@@ -39,7 +60,7 @@ const ResumeLibrary = () => {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <h1 className="text-3xl font-bold mb-4">Resume Library</h1>
       {/* Filters */}
-      <div className="grid gap-3 sm:grid-cols-3 items-end">
+      <div className="grid gap-3 sm:grid-cols-4 items-end">
         <div className="sm:col-span-2">
           <Label htmlFor="search">Search</Label>
           <Input id="search" placeholder="Search by title" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -53,6 +74,21 @@ const ResumeLibrary = () => {
               <button key={tag} className={`text-xs px-2 py-1 rounded border ${activeTags.includes(tag) ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`} onClick={() => setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}>{tag}</button>
             ))}
           </div>
+        </div>
+        <div>
+          <Label htmlFor="status">Application Status</Label>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ApplicationStatus | 'all')}>
+            <SelectTrigger id="status">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="not_applied">Not Applied</SelectItem>
+              <SelectItem value="applied">Applied</SelectItem>
+              <SelectItem value="unsuccessful">Unsuccessful</SelectItem>
+              <SelectItem value="successful">Successful</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -71,6 +107,7 @@ const ResumeLibrary = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle>{resume.title}</CardTitle>
                   <div className="flex items-center gap-2">
+                    <Badge variant="outline">{statusLabel(getEffectiveStatus(resume.applicationStatus))}</Badge>
                     {typeof resume.fitScore === 'number' && (
                       <Badge variant="secondary">{resume.fitScore}% Fit</Badge>
                     )}

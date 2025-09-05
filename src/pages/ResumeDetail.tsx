@@ -15,7 +15,7 @@ import { computeCoverageScore, canonicalizeToken } from "@/lib/analysis";
 import { assessFit, coachGaps } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type ApplicationStatus = 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
+type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,7 +66,9 @@ const ResumeDetail = () => {
         setMarkdown(data.markdown);
         setOriginalMarkdown(data.markdown);
         setJobDescription(data.jdRaw);
-        setApplicationStatus((data.meta && (data.meta.applicationStatus as ApplicationStatus)) || 'not_applied');
+        const rawStatus = data.meta?.applicationStatus;
+        const allowed: ApplicationStatus[] = ['applied', 'not_applied', 'unsuccessful', 'successful'];
+        setApplicationStatus(allowed.includes(rawStatus as any) ? (rawStatus as ApplicationStatus) : 'not_applied');
         if (data.derived) {
           setDerivedSkills(data.derived.skills || []);
           setDerivedKeywords(data.derived.keywords || []);
@@ -361,7 +363,6 @@ const ResumeDetail = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="applied">Applied</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="not_applied">Not Applied</SelectItem>
                   <SelectItem value="unsuccessful">Unsuccessful</SelectItem>
                   <SelectItem value="successful">Successful</SelectItem>
