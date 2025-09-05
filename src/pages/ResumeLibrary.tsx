@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus } from "lucide-react";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
@@ -108,9 +109,19 @@ const ResumeLibrary = () => {
 
       {filtered.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
-            <h2 className="text-xl font-semibold mb-2">No resumes found</h2>
-            <p className="text-muted-foreground mb-4">Create a new resume to get started.</p>
+          <CardContent className="p-8 text-center space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">No resumes found</h2>
+              <p className="text-muted-foreground">Create a new resume to get started.</p>
+            </div>
+            <div>
+              <Button asChild>
+                <Link to="/app/new">
+                  <Plus className="h-4 w-4" />
+                  New Resume
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
