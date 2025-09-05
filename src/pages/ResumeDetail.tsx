@@ -34,7 +34,6 @@ const ResumeDetail = () => {
   const [fitStrengths, setFitStrengths] = useState<string[]>([]);
   const [fitGaps, setFitGaps] = useState<string[]>([]);
   const [fitSeniority, setFitSeniority] = useState<'under' | 'exact' | 'over' | null>(null);
-  const [fitLoading, setFitLoading] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [coaching, setCoaching] = useState<{ suggestions: string[]; guidance?: string } | null>(null);
   const [showJobDescription, setShowJobDescription] = useState(false);
@@ -116,11 +115,35 @@ const ResumeDetail = () => {
       const resumeData = await getResume(id);
       if (resumeData) {
         const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, markdown, { weights: settings.atsWeights });
+        // Auto re-score Fit if API key available (non-blocking on failure)
+        let newFit = (resumeData as any).fit as any;
+        try {
+          if (settings.openAIApiKey) {
+            const canonical = await getPersonalDetails();
+            const result = await assessFit({
+              apiKey: settings.openAIApiKey,
+              model: settings.model,
+              jobDescription,
+              personalDetails: canonical || '',
+              generatedResume: markdown,
+            });
+            newFit = {
+              score: result.score ?? 0,
+              summary: result.summary || '',
+              strengths: result.strengths || [],
+              gaps: result.gaps || [],
+              seniority: (result.seniority as any) ?? undefined,
+            };
+          }
+        } catch (e) {
+          // Fit re-score failed; keep previous fit and continue
+        }
+
         await saveResume(id, {
           markdown,
           jdRaw: jobDescription,
           derived: { skills: resumeSkills, keywords: jdKeywords },
-          fit: (resumeData as any).fit,
+          fit: newFit,
           coaching: (resumeData as any).coaching,
           meta: { ...((resumeData as any).meta || {}), applicationStatus },
         });
@@ -128,16 +151,24 @@ const ResumeDetail = () => {
         updateResume(id, {
           updatedAt: new Date().toISOString(),
           score,
+          fitScore: typeof newFit?.score === 'number' ? newFit.score : (resumeData as any).fit?.score,
         });
 
         setDerivedSkills(resumeSkills);
         setDerivedKeywords(jdKeywords);
         setComputedScore(score);
         setOriginalMarkdown(markdown);
+        if (typeof newFit?.score === 'number') {
+          setFitScore(newFit.score);
+          setFitSummary(newFit.summary || '');
+          setFitStrengths(newFit.strengths || []);
+          setFitGaps(newFit.gaps || []);
+          setFitSeniority((newFit.seniority as any) ?? null);
+        }
 
         toast({
           title: "Saved!",
-          description: "Your resume has been saved successfully.",
+          description: settings.openAIApiKey ? "Resume saved and Fit re-scored." : "Resume saved (Fit not re-scored: no API key).",
         });
       }
     } catch (error) {
@@ -351,59 +382,7 @@ const ResumeDetail = () => {
                 <CardTitle>Fit Analysis</CardTitle>
                 <CardDescription>Assessment of candidate fit.</CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  if (!settings.openAIApiKey) {
-                    toast({ title: 'API Key Required', description: 'Set your OpenAI API key in Settings first.', variant: 'destructive' });
-                    return;
-                  }
-                  if (!id) return;
-                  setFitLoading(true);
-                  try {
-                    const canonical = await getPersonalDetails();
-                    const result = await assessFit({
-                      apiKey: settings.openAIApiKey,
-                      model: settings.model,
-                      jobDescription,
-                      personalDetails: canonical || '',
-                      generatedResume: markdown,
-                    });
-                    setFitScore(result.score ?? 0);
-                    setFitSummary(result.summary || '');
-                    setFitStrengths(result.strengths || []);
-                    setFitGaps(result.gaps || []);
-                    setFitSeniority((result.seniority as any) ?? null);
-
-                    const current = await getResume(id);
-                    if (current) {
-                      await saveResume(id, {
-                        markdown,
-                        jdRaw: jobDescription,
-                        derived: current.derived || { skills: [], keywords: [] },
-                        fit: {
-                          score: result.score ?? 0,
-                          summary: result.summary || '',
-                          strengths: result.strengths || [],
-                          gaps: result.gaps || [],
-                          seniority: (result.seniority as any) ?? undefined,
-                        },
-                        coaching: current.coaching,
-                        meta: { ...(current.meta || {}), applicationStatus },
-                      });
-                      updateResume(id, { updatedAt: new Date().toISOString(), fitScore: result.score ?? 0 });
-                    }
-                  } catch (e) {
-                    toast({ title: 'Fit Scoring Failed', description: e instanceof Error ? e.message : 'Could not compute fit.', variant: 'destructive' });
-                  } finally {
-                    setFitLoading(false);
-                  }
-                }}
-                disabled={fitLoading}
-              >
-                {fitLoading ? 'Scoring...' : 'Re-score Fit'}
-              </Button>
+              {/* Fit re-scoring now runs automatically on Save */}
               {/* Coaching is generated during resume creation and displayed below */}
             </div>
           </CardHeader>
