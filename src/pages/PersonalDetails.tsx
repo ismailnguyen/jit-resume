@@ -139,18 +139,6 @@ const PersonalDetails = () => {
     });
   };
 
-  const exportAsText = () => {
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'personal-details.md';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   if (loading) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
@@ -174,10 +162,6 @@ const PersonalDetails = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={exportAsText}>
-            <Download className="h-4 w-4 mr-1" />
-            Export
-          </Button>
           <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-1" />
             {saving ? "Saving..." : "Save"}
