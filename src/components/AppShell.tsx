@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -15,6 +15,24 @@ import { cn } from "@/lib/utils";
 const AppShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  
+  // Keyboard shortcuts: Cmd/Ctrl+N (new), Cmd/Ctrl+L (library)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === 'n') {
+        e.preventDefault();
+        window.location.assign('/app/new');
+      } else if (key === 'l') {
+        e.preventDefault();
+        window.location.assign('/app/library');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const navigation = [
     { name: "Dashboard", href: "/app", icon: LayoutDashboard },
@@ -36,10 +54,10 @@ const AppShell = () => {
 
       {/* Sidebar */}
       <div className={cn(
-        "w-72 flex-shrink-0 bg-card border-r shadow-large transition-transform lg:relative lg:z-0 lg:translate-x-0 lg:inset-0",
-        sidebarOpen ? "fixed inset-y-0 left-0 z-50 translate-x-0" : "fixed inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 lg:static"
+        "w-72 flex-shrink-0 bg-card border-r shadow-large transition-transform lg:sticky lg:top-0 lg:h-screen lg:z-0 lg:translate-x-0 lg:inset-0",
+        sidebarOpen ? "fixed inset-y-0 left-0 z-50 translate-x-0" : "fixed inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0"
       )}>
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col overflow-y-auto">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-6 border-b">
             <Link to="/app" className="flex items-center space-x-2">
@@ -67,7 +85,7 @@ const AppShell = () => {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth",
+                    "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth motion-reduce:transition-none motion-reduce:transform-none",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-glow"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
