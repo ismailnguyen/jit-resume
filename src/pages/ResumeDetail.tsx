@@ -169,21 +169,6 @@ const ResumeDetail = () => {
     }
   };
 
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(markdown).then(() => {
-      toast({
-        title: "Copied!",
-        description: "Resume markdown copied to clipboard.",
-      });
-    }).catch(() => {
-      toast({
-        title: "Copy Failed",
-        description: "Could not copy to clipboard.",
-        variant: "destructive",
-      });
-    });
-  };
-
   const handlePrint = () => {
     // Open only the rendered markdown resume in a new tab, then print
     const htmlContent = marked.parse(markdown);
@@ -308,13 +293,9 @@ const ResumeDetail = () => {
         </div>
         
         <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-          <Button variant="outline" onClick={handleCopyMarkdown}>
-            <Copy className="h-4 w-4 mr-1" />
-            Copy
-          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <Download className="h-4 w-4 mr-1" />
-            PDF
+            Download (PDF)
           </Button>
           {/* Smart reorder is now applied during initial generation */}
           <Button 
