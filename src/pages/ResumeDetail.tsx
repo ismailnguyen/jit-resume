@@ -263,6 +263,15 @@ const ResumeDetail = () => {
     const htmlContent = marked.parse(markdown);
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) return;
+    // Use resume title as the PDF filename (browser print uses document title)
+    const rawTitle = (resumeMeta?.title || 'Resume').trim();
+    const fileTitle = rawTitle
+      // remove characters invalid in filenames on major OSes
+      .replace(/[\\\/:*?"<>|]+/g, '')
+      // collapse excessive spaces
+      .replace(/\s+/g, ' ')
+      // keep it to a reasonable length
+      .slice(0, 120) || 'Resume';
     const themeCSS = (() => {
       const base = `
         @page { margin: 1in; }
@@ -400,13 +409,15 @@ const ResumeDetail = () => {
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Resume PDF</title>
+          <title>${fileTitle}</title>
           <style>${themeCSS}${settings.additionalPrintCss ? `\n/* Custom */\n${settings.additionalPrintCss}` : ''}</style>
         </head>
         <body>${htmlContent}</body>
       </html>
     `);
     printWindow.document.close();
+    // Explicitly set title to influence default PDF filename across browsers
+    try { printWindow.document.title = fileTitle; } catch {}
     printWindow.focus();
     printWindow.print();
     printWindow.close();
