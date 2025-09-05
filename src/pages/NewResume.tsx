@@ -15,36 +15,6 @@ import { nanoid } from "nanoid";
 import { FileText, Wand2, Sparkles } from "lucide-react";
 import { computeCoverageScore, smartReorder } from "@/lib/analysis";
 
-const SAMPLE_JD = `Job Title: Senior Frontend Developer
-Company: TechCorp Inc.
-
-We are seeking a Senior Frontend Developer to join our dynamic team. The ideal candidate will have:
-
-Requirements:
-• 5+ years of experience in frontend development
-• Expert knowledge of React, TypeScript, and modern JavaScript
-• Experience with state management (Redux, Zustand)
-• Proficiency in CSS preprocessors and Tailwind CSS
-• Experience with testing frameworks (Jest, Cypress)
-• Knowledge of build tools (Webpack, Vite)
-• Understanding of responsive design and cross-browser compatibility
-• Experience with Git version control
-• Strong problem-solving skills and attention to detail
-
-Responsibilities:
-• Develop and maintain high-quality web applications
-• Collaborate with designers and backend developers
-• Write clean, maintainable, and well-documented code
-• Participate in code reviews and technical discussions
-• Optimize applications for maximum speed and scalability
-• Stay up-to-date with the latest frontend technologies
-
-Benefits:
-• Competitive salary and equity package
-• Health, dental, and vision insurance
-• Flexible work arrangements
-• Professional development opportunities`;
-
 const NewResume = () => {
   const navigate = useNavigate();
   const { settings, addResume } = useStore();
@@ -56,17 +26,6 @@ const NewResume = () => {
   const [generating, setGenerating] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
-
-  const insertSample = () => {
-    setJobDescription(SAMPLE_JD);
-    if (!title) {
-      setTitle("Senior Frontend Developer at TechCorp");
-    }
-    toast({
-      title: "Sample inserted",
-      description: "You can now customize or generate directly with this example.",
-    });
-  };
 
   const importFromUrl = async () => {
     if (!importUrl.trim()) return;
@@ -351,10 +310,7 @@ const NewResume = () => {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="w-full" onClick={importFromUrl} disabled={importing || !importUrl}>
-                  {importing ? 'Importing…' : 'Import URL'}
-                </Button>
-                <Button variant="outline" size="sm" className="w-full" onClick={insertSample}>
-                  Insert Sample
+                  {importing ? 'Importing…' : 'Import from URL'}
                 </Button>
               </div>
             </div>
