@@ -48,7 +48,7 @@ const Dashboard = () => {
             <button className="text-sm text-muted-foreground hover:underline" onClick={() => setFirstRunSeen(true)}>Dismiss</button>
           </div>
           <div className="px-4 pb-4 grid gap-3 md:grid-cols-3">
-            {remaining.map((s) => (
+            {steps.map((s) => (
               <GuideStep key={s.key} title={s.title} description={s.description} href={s.href} done={s.done} />
             ))}
           </div>
@@ -272,7 +272,7 @@ export default Dashboard;
 
 function GuideStep({ title, description, href, done, onClick }: { title: string; description: string; href: string; done?: boolean; onClick?: () => void }) {
   return (
-    <Link to={href} onClick={onClick} className={`flex items-center justify-between rounded-md border p-3 hover:bg-accent transition-smooth ${done ? 'opacity-60' : ''}`}>
+    <Link to={href} onClick={onClick} className={`flex items-center justify-between rounded-md border p-3 hover:bg-accent transition-smooth ${done ? 'opacity-20 cursor-not-allowed' : ''}`}>
       <div>
         <div className="text-sm font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">{description}</div>
