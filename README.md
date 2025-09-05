@@ -10,7 +10,7 @@ Generate a tailored, ATS-friendly résumé for any job in seconds. Privacy‑fir
 - Gap coaching (bullet‑level suggestions to close JD gaps, generated automatically on creation)
 - Smart reorder of bullets by JD relevance (applied automatically on generation)
 - Side‑by‑side editor + live preview (desktop)
-- PDF themes with visual previews (Modern/Classic/Compact)
+- PDF themes with visual previews (Modern/Classic/Compact/LaTeX)
 - Import JD from URL or PDF/Text (transparent CORS fallback)
 - Tags + filters in library
 - Cost controls with token‑based estimate and per‑generation cap

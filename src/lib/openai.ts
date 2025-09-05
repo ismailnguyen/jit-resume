@@ -50,6 +50,11 @@ export async function generateResume(args: GenerateResumeArgs): Promise<string> 
 - Highly condensed; tighter spacing and shorter bullets;
 - Prefer merging related points; avoid redundant phrasing;
 - Keep to one page if feasible.`;
+      case 'latex':
+        return `Theme details (LaTeX):
+- Serif typography; small-caps section headers;
+- Clean typographic hierarchy; understated rules and spacing;
+- Strictly formal tone; no icons/emojis.`;
       case 'modern':
       default:
         return `Theme details (modern):

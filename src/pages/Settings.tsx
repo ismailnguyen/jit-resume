@@ -12,7 +12,7 @@ import { Eye, EyeOff, TestTube, Trash2, AlertTriangle } from "lucide-react";
 import { clearAllData } from "@/lib/storage";
 import React from "react";
 
-function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact' }) {
+function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact'|'latex' }) {
   const sampleHTML = `
     <h1>Jane Doe</h1>
     <h2>Experience</h2>
@@ -22,39 +22,51 @@ function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact' }) {
       <li>Shipped design system; collaborated with cross‑functional teams</li>
     </ul>
   `;
+  const cls = `pv-${theme}`;
   const base = `
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    h1,h2,h3 { margin: 0; }
-    ul { padding-left: 1.2rem; margin: 0.25rem 0; }
-    p { margin: 0.25rem 0; }
+    .${cls} * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .${cls} h1, .${cls} h2, .${cls} h3 { margin: 0; }
+    .${cls} ul { padding-left: 1.2rem; margin: 0.25rem 0; }
+    .${cls} p { margin: 0.25rem 0; }
+    .${cls} { max-width: 420px; }
   `;
   const css = theme === 'classic'
     ? `
       ${base}
-      .pv { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; font-size: 12px; }
-      .pv h1 { font-size: 18px; margin-bottom: 4px; }
-      .pv h2 { font-size: 14px; border-bottom: 1px solid #e2e8f0; margin-top: 6px; }
-      .pv h3 { font-size: 12px; }
+      .${cls} { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; font-size: 12px; }
+      .${cls} h1 { font-size: 18px; margin-bottom: 4px; }
+      .${cls} h2 { font-size: 14px; border-bottom: 1px solid #e2e8f0; margin-top: 6px; }
+      .${cls} h3 { font-size: 12px; }
     `
     : theme === 'compact'
     ? `
       ${base}
-      .pv { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Arial, sans-serif; line-height: 1.25; font-size: 11px; }
-      .pv h1 { font-size: 16px; margin-bottom: 2px; }
-      .pv h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-      .pv h3 { font-size: 11px; }
+      .${cls} { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Arial, sans-serif; line-height: 1.25; font-size: 11px; }
+      .${cls} h1 { font-size: 16px; margin-bottom: 2px; }
+      .${cls} h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+      .${cls} h3 { font-size: 11px; }
+    `
+    : theme === 'latex'
+    ? `
+      ${base}
+      .${cls} { font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; line-height: 1.35; font-size: 12px; color: #111827; }
+      .${cls} h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 4px; }
+      .${cls} h2 { font-size: 14px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+      .${cls} h3 { font-size: 12px; font-weight: 600; }
+      .${cls} ul { padding-left: 1.4rem; }
     `
     : `
       ${base}
-      .pv { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; font-size: 12px; }
-      .pv h1 { font-size: 20px; margin-bottom: 4px; }
-      .pv h2 { font-size: 13px; color: #334155; margin-top: 6px; }
-      .pv h3 { font-size: 12px; }
+      .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; font-size: 12px; color: #0f172a; }
+      .${cls} h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -0.02em; }
+      .${cls} h2 { font-size: 13px; color: #2563eb; margin-top: 6px; font-weight: 600; }
+      .${cls} h3 { font-size: 12px; font-weight: 600; }
+      .${cls} a { color: #2563eb; text-decoration: none; }
     `;
   return (
     <div className="p-3 bg-white">
       <style>{css}</style>
-      <div className="pv" dangerouslySetInnerHTML={{ __html: sampleHTML }} />
+      <div className={cls} dangerouslySetInnerHTML={{ __html: sampleHTML }} />
     </div>
   );
 }
@@ -226,12 +238,12 @@ const Settings = () => {
           <div className="space-y-2">
             <Label>PDF Theme</Label>
             <p className="text-xs text-muted-foreground">
-              Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout to fit more on one page.
+              Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout. LaTeX: small‑caps section headers, serif typography.
             </p>
 
             {/* Theme previews */}
-            <div className="grid sm:grid-cols-3 gap-3 mt-1">
-              {(['modern','classic','compact'] as const).map((theme) => (
+            <div className="grid sm:grid-cols-4 gap-3 mt-1">
+              {(['modern','classic','compact','latex'] as const).map((theme) => (
                 <button
                   key={theme}
                   type="button"

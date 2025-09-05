@@ -246,6 +246,16 @@ const ResumeDetail = () => {
             p, li { font-size: 11px; margin: 0.15rem 0; }
             ul { margin-top: 0.1rem; }
           `;
+        case 'latex':
+          return `
+            ${base}
+            body { font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; line-height: 1.35; }
+            h1 { font-size: 24px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 0.25rem; }
+            h2 { font-size: 16px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 0.8rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+            h3 { font-size: 13px; font-weight: 600; }
+            p, li { font-size: 12px; }
+            ul { margin-top: 0.2rem; padding-left: 1.2rem; }
+          `;
         case 'modern':
         default:
           return `
