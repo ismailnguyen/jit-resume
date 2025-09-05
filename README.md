@@ -8,7 +8,7 @@ Generate a tailored, ATS-friendly résumé for any job in seconds. Privacy‑fir
 - ATS keyword analysis with weighted score (synonym‑aware; tunable weights)
 - HR‑style Fit Score with strengths/gaps/seniority
 - Gap coaching (bullet‑level suggestions to close JD gaps)
-- Smart reorder of bullets by JD relevance
+- Smart reorder of bullets by JD relevance (applied automatically on generation)
 - Side‑by‑side editor + live preview (desktop)
 - PDF themes with visual previews (Modern/Classic/Compact)
 - Import JD from URL or PDF/Text (transparent CORS fallback)
@@ -75,7 +75,8 @@ Estimates use rough tokenization (chars/4) of JD + personal details for input an
 ## Key Files
 
 - `src/pages/NewResume.tsx` — JD import, language selection, generation, cost checks
-- `src/pages/ResumeDetail.tsx` — editor/preview, ATS/Fit, coaching, smart reorder, PDF export
+- `src/pages/ResumeDetail.tsx` — editor/preview, ATS/Fit, coaching, PDF export
+- `src/lib/analysis.ts` — keyword extraction, section‑weighted ATS scoring, smart reorder
 - `src/pages/ResumeLibrary.tsx` — list, tags, filters
 - `src/pages/Settings.tsx` — API config, themes, cost controls, ATS weights
 - `src/lib/openai.ts` — OpenAI calls (generate, fit assess, gap coaching)

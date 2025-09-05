@@ -13,7 +13,7 @@ import { saveResume } from "@/lib/storage";
 import { getPersonalDetails } from "@/lib/storage";
 import { nanoid } from "nanoid";
 import { FileText, Wand2, Sparkles } from "lucide-react";
-import { computeCoverageScore } from "@/lib/analysis";
+import { computeCoverageScore, smartReorder } from "@/lib/analysis";
 
 const SAMPLE_JD = `Job Title: Senior Frontend Developer
 Company: TechCorp Inc.
@@ -204,7 +204,11 @@ const NewResume = () => {
         anonymizeLocation: settings.anonymizeLocation,
       });
 
-      const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, generatedMarkdown, { weights: settings.atsWeights });
+      // Compute JD keywords, then smartly reorder bullets by relevance
+      const initialCoverage = computeCoverageScore(jobDescription, generatedMarkdown, { weights: settings.atsWeights });
+      const reorderedMarkdown = smartReorder(generatedMarkdown, initialCoverage.jdKeywords);
+      // Recompute coverage on the final (reordered) markdown
+      const { score, jdKeywords, resumeSkills } = computeCoverageScore(jobDescription, reorderedMarkdown, { weights: settings.atsWeights });
 
       // Assess HR-style fit via LLM (best-effort; non-blocking on failure)
       let fit: { score: number; summary?: string; strengths?: string[]; gaps?: string[]; seniority?: 'under' | 'exact' | 'over' } | undefined = undefined;
@@ -214,7 +218,7 @@ const NewResume = () => {
           model: settings.model,
           jobDescription,
           personalDetails,
-          generatedResume: generatedMarkdown,
+          generatedResume: reorderedMarkdown,
         });
         fit = fitAnalysis;
       } catch (e) {
@@ -237,7 +241,7 @@ const NewResume = () => {
 
       // Save to storage
       await saveResume(resumeId, {
-        markdown: generatedMarkdown,
+        markdown: reorderedMarkdown,
         jdRaw: jobDescription,
         derived: { skills: resumeSkills, keywords: jdKeywords },
         fit,

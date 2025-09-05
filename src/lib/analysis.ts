@@ -134,3 +134,37 @@ export function computeCoverageScore(
 
   return { score, jdKeywords, resumeSkills };
 }
+
+// Reorder consecutive bullet lines within sections by JD keyword relevance
+export function smartReorder(md: string, jdKeywords: string[]): string {
+  const keywords = new Set(jdKeywords.map(k => canonicalizeToken(k)));
+  const lines = md.split(/\r?\n/);
+  const out: string[] = [];
+  let i = 0;
+  const isBullet = (s: string) => /^\s*[-*•]\s+/.test(s);
+  const scoreLine = (s: string) => {
+    const text = s.toLowerCase();
+    const tokens = text
+      .replace(/[^a-z0-9+#.\-\s]/g, ' ')
+      .split(/\s+/)
+      .map(canonicalizeToken);
+    let score = 0;
+    for (const t of tokens) if (keywords.has(t)) score++;
+    return score;
+  };
+  while (i < lines.length) {
+    out.push(lines[i]);
+    if (isBullet(lines[i + 1] || '')) {
+      const blockStart = i + 1;
+      let j = blockStart;
+      const block: string[] = [];
+      while (j < lines.length && isBullet(lines[j])) { block.push(lines[j]); j++; }
+      const sorted = [...block].sort((a, b) => scoreLine(b) - scoreLine(a));
+      out.push(...sorted);
+      i = j;
+      continue;
+    }
+    i++;
+  }
+  return out.join('\n');
+}
