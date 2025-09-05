@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { generateResume, assessFit } from "@/lib/openai";
+import { generateResume, assessFit, coachGaps } from "@/lib/openai";
 import { saveResume } from "@/lib/storage";
 import { getPersonalDetails } from "@/lib/storage";
 import { nanoid } from "nanoid";
@@ -212,6 +212,7 @@ const NewResume = () => {
 
       // Assess HR-style fit via LLM (best-effort; non-blocking on failure)
       let fit: { score: number; summary?: string; strengths?: string[]; gaps?: string[]; seniority?: 'under' | 'exact' | 'over' } | undefined = undefined;
+      let coaching: { suggestions: string[]; guidance?: string } | undefined = undefined;
       try {
         const fitAnalysis = await assessFit({
           apiKey: settings.openAIApiKey,
@@ -221,6 +222,15 @@ const NewResume = () => {
           generatedResume: reorderedMarkdown,
         });
         fit = fitAnalysis;
+        // Also generate gap coaching suggestions
+        const coachingResult = await coachGaps({
+          apiKey: settings.openAIApiKey,
+          model: settings.model,
+          jobDescription,
+          personalDetails,
+          generatedResume: reorderedMarkdown,
+        });
+        coaching = coachingResult;
       } catch (e) {
         console.warn('Fit assessment failed:', e);
       }
@@ -245,6 +255,7 @@ const NewResume = () => {
         jdRaw: jobDescription,
         derived: { skills: resumeSkills, keywords: jdKeywords },
         fit,
+        coaching,
       });
 
       // Add to store
