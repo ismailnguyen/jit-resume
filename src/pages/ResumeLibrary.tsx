@@ -46,6 +46,20 @@ const ResumeLibrary = () => {
     return matchesQuery && matchesTags && matchesStatus;
   });
 
+  // Lightweight virtualization: incrementally render more on scroll
+  const [visibleCount, setVisibleCount] = useState(30);
+  useEffect(() => {
+    setVisibleCount(30); // reset when filter changes
+  }, [query, JSON.stringify(activeTags), statusFilter]);
+  useEffect(() => {
+    const onScroll = () => {
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
+      if (nearBottom) setVisibleCount((c) => Math.min(c + 30, filtered.length));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll as any);
+  }, [filtered.length]);
+
   const handleView = (id: string) => {
     navigate(`/app/resume/${id}`);
   };
@@ -101,7 +115,7 @@ const ResumeLibrary = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filtered.map(resume => (
+          {filtered.slice(0, visibleCount).map(resume => (
             <Card key={resume.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -152,6 +166,9 @@ const ResumeLibrary = () => {
               </CardContent>
             </Card>
           ))}
+          {visibleCount < filtered.length && (
+            <div className="text-center text-xs text-muted-foreground py-2">Scroll to load more…</div>
+          )}
         </div>
       )}
     </div>
