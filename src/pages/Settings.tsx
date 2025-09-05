@@ -373,6 +373,25 @@ const Settings = () => {
         </CardContent>
       </Card>
 
+      {/* Advanced Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Advanced</CardTitle>
+          <CardDescription>Add custom print CSS to fine‑tune PDF output.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="additionalCss">Additional print CSS</Label>
+          <textarea
+            id="additionalCss"
+            className="w-full min-h-[140px] rounded-md border bg-background p-2 font-mono text-xs"
+            placeholder="e.g., h2 { color: #111; } ul { margin-top: 2px; }"
+            value={settings.additionalPrintCss || ''}
+            onChange={(e) => setSettings({ additionalPrintCss: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">Appends to the selected theme when exporting to PDF.</p>
+        </CardContent>
+      </Card>
+
       {/* ATS Scoring Weights */}
       <Card>
         <CardHeader>

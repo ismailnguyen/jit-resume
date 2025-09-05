@@ -8,6 +8,7 @@ export interface Settings {
   defaultLanguage: 'en' | 'fr' | 'de' | 'es';
   includeContactLinks: boolean;
   anonymizeLocation: boolean;
+  additionalPrintCss?: string;
   // Cost controls
   costControlsEnabled?: boolean;
   priceInPer1k?: number;   // USD per 1k input tokens (editable)
@@ -67,6 +68,7 @@ const defaultSettings: Settings = {
   defaultLanguage: 'en',
   includeContactLinks: true,
   anonymizeLocation: false,
+  additionalPrintCss: '',
   costControlsEnabled: false,
   priceInPer1k: 0.15,   // defaults; users can adjust
   priceOutPer1k: 0.6,
