@@ -89,7 +89,8 @@ export async function getPersonalDetails(): Promise<string | null> {
   try {
     const database = await getDB();
     const result = await database.get('personalDetails', 'single');
-    return result?.markdown || null;
+    // Use nullish coalescing so empty string is preserved (user may intentionally save empty)
+    return result?.markdown ?? null;
   } catch (error) {
     console.error('Error getting personal details:', error);
     return null;

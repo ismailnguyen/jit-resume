@@ -8,7 +8,7 @@ const Dashboard = () => {
   const { settings, resumesIndex, personalMeta, firstRunSeen, setFirstRunSeen } = useStore();
 
   const hasApiKey = !!settings.openAIApiKey;
-  const hasPersonalDetails = !!personalMeta;
+  const hasPersonalDetails = !!personalMeta && ((personalMeta.lengthBytes ?? 0) > 0);
   const resumeCount = resumesIndex.length;
   const statusCounts = resumesIndex.reduce<Record<string, number>>((acc, r) => {
     const s = (r.applicationStatus || 'not_applied');
@@ -28,8 +28,8 @@ const Dashboard = () => {
 
   // Compute first-run steps and which remain
   const steps = [
-    { key: 'api', title: 'Add API Key', done: !!settings.openAIApiKey, href: '/app/settings', description: 'Enable AI generation' },
-    { key: 'personal', title: 'Add Personal Details', done: !!personalMeta, href: '/app/personal', description: 'Create your canonical resume' },
+    { key: 'api', title: 'Add API Key', done: hasApiKey, href: '/app/settings', description: 'Enable AI generation' },
+    { key: 'personal', title: 'Add Personal Details', done: hasPersonalDetails, href: '/app/personal', description: 'Create your canonical resume' },
     { key: 'first', title: 'Generate Your First Resume', done: resumesIndex.length > 0, href: '/app/new', description: 'Paste a JD and go' },
   ];
   const remaining = steps.filter(s => !s.done);
@@ -161,10 +161,10 @@ const Dashboard = () => {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Create New Resume */}
         <Card className={cn(
-          "bg-gradient-card hover:shadow-large transition-smooth cursor-pointer",
+          "bg-gradient-card hover:shadow-large transition-smooth",
           hasApiKey && hasPersonalDetails 
-            ? "border-primary/20 hover:border-primary/40"
-            : "opacity-50"
+            ? "border-primary/20 hover:border-primary/40 cursor-pointer"
+            : "opacity-50 cursor-not-allowed"
         )}>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -178,7 +178,12 @@ const Dashboard = () => {
             </p>
             <Button 
               asChild 
-              className="w-full"
+              className={cn(
+                "w-full",
+                hasApiKey && hasPersonalDetails 
+                  ? ""
+                  : "cursor-not-allowed"
+              )}
               disabled={!hasApiKey || !hasPersonalDetails}
             >
               <Link to="/app/new">
@@ -189,7 +194,12 @@ const Dashboard = () => {
         </Card>
 
         {/* Resume Library */}
-        <Card className="bg-gradient-card hover:shadow-large transition-smooth">
+        <Card className={cn(
+          "bg-gradient-card hover:shadow-large transition-smooth",
+          hasApiKey 
+            ? "border-primary/20 hover:border-primary/40 cursor-pointer"
+            : "opacity-50 cursor-not-allowed"
+        )}>
           <CardHeader>
             <CardTitle>Resume Library</CardTitle>
           </CardHeader>
@@ -200,7 +210,7 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground mb-4">
               {resumeCount === 1 ? "Resume saved" : "Resumes saved"}
             </p>
-            <Button variant="outline" asChild className="w-full">
+            <Button variant="outline" asChild className="w-full" disabled={!hasApiKey}>
               <Link to="/app/library">
                 View Library
               </Link>

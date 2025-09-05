@@ -11,10 +11,16 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 
 const AppShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { settings, personalMeta } = useStore();
+  const hasApiKey = !!settings.openAIApiKey;
+  const hasPersonal = !!personalMeta && ((personalMeta.lengthBytes ?? 0) > 0);
+  const canUseNewResume = hasApiKey && hasPersonal;
+  const canUseLibrary = hasApiKey;
   
   // Keyboard shortcuts: Cmd/Ctrl+N (new), Cmd/Ctrl+L (library)
   useEffect(() => {
@@ -24,23 +30,23 @@ const AppShell = () => {
       const key = e.key.toLowerCase();
       if (key === 'n') {
         e.preventDefault();
-        window.location.assign('/app/new');
+        if (canUseNewResume) window.location.assign('/app/new');
       } else if (key === 'l') {
         e.preventDefault();
-        window.location.assign('/app/library');
+        if (canUseLibrary) window.location.assign('/app/library');
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [canUseNewResume, canUseLibrary]);
 
   const navigation = [
-    { name: "New Resume", href: "/app/new", icon: Plus },
+    { name: "New Resume", href: "/app/new", icon: Plus, requiresSetup: true },
     { name: "Dashboard", href: "/app", icon: LayoutDashboard },
-    { name: "Resume Library", href: "/app/library", icon: Library },
+    { name: "Resume Library", href: "/app/library", icon: Library, requiresSetup: true },
     { name: "Personal Details", href: "/app/personal", icon: User },
     { name: "Settings", href: "/app/settings", icon: Settings },
-  ];
+  ] as const;
 
   return (
   <div className="min-h-screen bg-gradient-subtle lg:flex">
@@ -79,22 +85,43 @@ const AppShell = () => {
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
+              const disabled = item.href === '/app/new'
+                ? !canUseNewResume
+                : item.href === '/app/library'
+                  ? !canUseLibrary
+                  : false;
               
               return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth motion-reduce:transition-none motion-reduce:transform-none",
-                    isActive
-                      ? "border-2 border-primary text-muted-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </Link>
+                disabled ? (
+                  <div
+                    key={item.name}
+                    className={cn(
+                      "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium opacity-50 cursor-not-allowed",
+                      isActive
+                        ? "border-2 border-muted text-muted-foreground"
+                        : "text-muted-foreground"
+                    )}
+                    aria-disabled
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth motion-reduce:transition-none motion-reduce:transform-none",
+                      isActive
+                        ? "border-2 border-primary text-muted-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
               );
             })}
           </nav>
@@ -128,7 +155,7 @@ const AppShell = () => {
             </div>
             
             <div className="flex items-center space-x-2">
-              {location.pathname !== '/app/new' && (
+              {location.pathname !== '/app/new' && canUseNewResume && (
                 <Link
                   to="/app/new"
                   className={cn(

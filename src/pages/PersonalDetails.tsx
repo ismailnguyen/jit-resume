@@ -81,7 +81,7 @@ const PersonalDetails = () => {
     try {
       console.log('Loading personal details...');
       const data = await getPersonalDetails();
-      if (data) {
+      if (data !== null) {
         console.log('Loaded personal details:', data.length, 'characters');
         setMarkdown(data);
       } else {
@@ -198,12 +198,10 @@ const PersonalDetails = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Markdown Editor</h2>
-          {markdown === TEMPLATE_CONTENT && (
             <Button variant="outline" size="sm" onClick={insertTemplate}>
               <FileText className="h-4 w-4 mr-1" />
-              Reset Template
+              Insert template
             </Button>
-          )}
         </div>
         
         <div className="min-h-96">

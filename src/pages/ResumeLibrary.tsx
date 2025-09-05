@@ -11,9 +11,13 @@ import { Plus } from "lucide-react";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
+  const settings = useStore((state) => state.settings);
+  const personalMeta = useStore((state) => state.personalMeta);
   const deleteResume = useStore((state) => state.deleteResume);
   const updateResume = useStore((state) => state.updateResume);
   const navigate = useNavigate();
+  const canUseResumes = !!settings.openAIApiKey; // access to library only depends on API key
+  const canUseNewResume = !!settings.openAIApiKey && !!personalMeta && ((personalMeta.lengthBytes ?? 0) > 0);
 
   // No need to fetch resumes, store is reactive
 
@@ -69,6 +73,13 @@ const ResumeLibrary = () => {
     deleteResume(id);
   };
 
+  // Route guard: block access until setup complete
+  useEffect(() => {
+    if (!canUseResumes) {
+      navigate('/app');
+    }
+  }, [canUseResumes, navigate]);
+
   // No loading state needed
 
   return (
@@ -115,7 +126,7 @@ const ResumeLibrary = () => {
               <p className="text-muted-foreground">Create a new resume to get started.</p>
             </div>
             <div>
-              <Button asChild>
+              <Button asChild disabled={!canUseNewResume}>
                 <Link to="/app/new">
                   <Plus className="h-4 w-4" />
                   New Resume
