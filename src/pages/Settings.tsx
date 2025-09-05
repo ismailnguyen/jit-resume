@@ -12,7 +12,7 @@ import { Eye, EyeOff, TestTube, Trash2, AlertTriangle } from "lucide-react";
 import { clearAllData } from "@/lib/storage";
 import React from "react";
 
-function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact'|'latex' }) {
+function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact'|'latex'|'minimal'|'executive'|'mono'|'corporate'|'ats'|'accent'|'a4'|'timeline' }) {
   const sampleHTML = `
     <h1>Jane Doe</h1>
     <h2>Experience</h2>
@@ -30,39 +30,111 @@ function ThemePreview({ theme }: { theme: 'modern'|'classic'|'compact'|'latex' }
     .${cls} p { margin: 0.25rem 0; }
     .${cls} { max-width: 420px; }
   `;
-  const css = theme === 'classic'
-    ? `
-      ${base}
-      .${cls} { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; font-size: 12px; }
-      .${cls} h1 { font-size: 18px; margin-bottom: 4px; }
-      .${cls} h2 { font-size: 14px; border-bottom: 1px solid #e2e8f0; margin-top: 6px; }
-      .${cls} h3 { font-size: 12px; }
-    `
-    : theme === 'compact'
-    ? `
-      ${base}
-      .${cls} { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Arial, sans-serif; line-height: 1.25; font-size: 11px; }
-      .${cls} h1 { font-size: 16px; margin-bottom: 2px; }
-      .${cls} h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-      .${cls} h3 { font-size: 11px; }
-    `
-    : theme === 'latex'
-    ? `
-      ${base}
-      .${cls} { font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; line-height: 1.35; font-size: 12px; color: #111827; }
-      .${cls} h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 4px; }
-      .${cls} h2 { font-size: 14px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
-      .${cls} h3 { font-size: 12px; font-weight: 600; }
-      .${cls} ul { padding-left: 1.4rem; }
-    `
-    : `
-      ${base}
-      .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; font-size: 12px; color: #0f172a; }
-      .${cls} h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -0.02em; }
-      .${cls} h2 { font-size: 13px; color: #2563eb; margin-top: 6px; font-weight: 600; }
-      .${cls} h3 { font-size: 12px; font-weight: 600; }
-      .${cls} a { color: #2563eb; text-decoration: none; }
-    `;
+  const css = (() => {
+    switch (theme) {
+      case 'classic':
+        return `
+          ${base}
+          .${cls} { font-family: Georgia, 'Times New Roman', serif; line-height: 1.35; font-size: 12px; }
+          .${cls} h1 { font-size: 18px; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 14px; border-bottom: 1px solid #e2e8f0; margin-top: 6px; }
+          .${cls} h3 { font-size: 12px; }
+        `;
+      case 'compact':
+        return `
+          ${base}
+          .${cls} { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Arial, sans-serif; line-height: 1.25; font-size: 11px; }
+          .${cls} h1 { font-size: 16px; margin-bottom: 2px; }
+          .${cls} h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+          .${cls} h3 { font-size: 11px; }
+        `;
+      case 'latex':
+        return `
+          ${base}
+          .${cls} { font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; line-height: 1.35; font-size: 12px; color: #111827; }
+          .${cls} h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 14px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+          .${cls} ul { padding-left: 1.4rem; }
+        `;
+      case 'minimal':
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.45; font-size: 12px; color: #0f172a; }
+          .${cls} h1 { font-size: 20px; letter-spacing: -0.02em; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 13px; color: #475569; margin-top: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+        `;
+      case 'executive':
+        return `
+          ${base}
+          .${cls} { font-family: Georgia, 'Times New Roman', serif; line-height: 1.4; font-size: 12px; color: #0b1220; }
+          .${cls} h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 14px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+        `;
+      case 'mono':
+        return `
+          ${base}
+          .${cls} { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; line-height: 1.5; font-size: 11.5px; color: #0f172a; }
+          .${cls} h1 { font-size: 18px; margin-bottom: 2px; }
+          .${cls} h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; }
+          .${cls} h3 { font-size: 11px; font-weight: 700; }
+        `;
+      case 'corporate':
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.45; font-size: 12px; color: #0f172a; }
+          .${cls} h1 { font-size: 20px; letter-spacing: -0.01em; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 13px; color: #1d4ed8; margin-top: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+          .${cls} a { color: #1d4ed8; text-decoration: none; }
+        `;
+      case 'ats':
+        return `
+          ${base}
+          .${cls} { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; line-height: 1.4; font-size: 12px; color: #111827; }
+          .${cls} h1 { font-size: 20px; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 13px; margin-top: 6px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+        `;
+      case 'accent':
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; font-size: 12px; color: #0f172a; }
+          .${cls} h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -0.02em; }
+          .${cls} h2 { font-size: 13px; color: #7c3aed; margin-top: 6px; font-weight: 600; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+          .${cls} a { color: #7c3aed; text-decoration: none; }
+        `;
+      case 'a4':
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.4; font-size: 11.5px; color: #0f172a; }
+          .${cls} h1 { font-size: 19px; margin-bottom: 4px; }
+          .${cls} h2 { font-size: 12.5px; color: #334155; margin-top: 6px; }
+          .${cls} h3 { font-size: 11.5px; font-weight: 600; }
+        `;
+      case 'timeline':
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; font-size: 12px; color: #0f172a; }
+          .${cls} h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -0.02em; }
+          .${cls} h2 { font-size: 13px; color: #334155; margin-top: 8px; border-left: 3px solid #e5e7eb; padding-left: 8px; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+        `;
+      case 'modern':
+      default:
+        return `
+          ${base}
+          .${cls} { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; font-size: 12px; color: #0f172a; }
+          .${cls} h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: -0.02em; }
+          .${cls} h2 { font-size: 13px; color: #2563eb; margin-top: 6px; font-weight: 600; }
+          .${cls} h3 { font-size: 12px; font-weight: 600; }
+          .${cls} a { color: #2563eb; text-decoration: none; }
+        `;
+    }
+  })();
   return (
     <div className="p-3 bg-white">
       <style>{css}</style>
@@ -237,20 +309,16 @@ const Settings = () => {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>PDF Theme</Label>
-            <p className="text-xs text-muted-foreground">
-              Modern: clean sans-serif. Classic: serif and traditional spacing. Compact: tighter layout. LaTeX: small‑caps section headers, serif typography.
-            </p>
-
             {/* Theme previews */}
             <div className="grid sm:grid-cols-4 gap-3 mt-1">
-              {(['modern','classic','compact','latex'] as const).map((theme) => (
+              {(['modern','classic','compact','latex','minimal','executive','mono','corporate','ats','accent','a4','timeline'] as const).map((theme) => (
                 <button
                   key={theme}
                   type="button"
                   onClick={() => setSettings({ pdfTheme: theme })}
                   className={`rounded-md border text-left p-3 hover:bg-accent transition-smooth ${settings.pdfTheme===theme ? 'ring-2 ring-primary' : ''}`}
                 >
-                  <div className="text-xs font-medium mb-2 capitalize">{theme} preview</div>
+                  <div className="text-xs font-medium mb-2 capitalize">{theme}</div>
                   <div className="rounded bg-background overflow-hidden">
                     <ThemePreview theme={theme} />
                   </div>

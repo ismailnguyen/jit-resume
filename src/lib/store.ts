@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 export interface Settings {
   openAIApiKey: string | null;
   model: 'gpt-4o-mini' | 'gpt-4o' | 'gpt-4.1-mini' | 'gpt-4.1';
-  pdfTheme: 'classic' | 'modern' | 'compact' | 'latex';
+  pdfTheme: 'classic' | 'modern' | 'compact' | 'latex' | 'minimal' | 'executive' | 'mono' | 'corporate' | 'ats' | 'accent' | 'a4' | 'timeline';
   defaultLanguage: 'en' | 'fr' | 'de' | 'es';
   includeContactLinks: boolean;
   anonymizeLocation: boolean;

@@ -256,6 +256,81 @@ const ResumeDetail = () => {
             p, li { font-size: 12px; }
             ul { margin-top: 0.2rem; padding-left: 1.2rem; }
           `;
+        case 'minimal':
+          return `
+            ${base}
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.45; }
+            h1 { font-size: 22px; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+            h2 { font-size: 14px; color: #475569; margin-top: 0.8rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 12px; }
+          `;
+        case 'executive':
+          return `
+            ${base}
+            body { font-family: Georgia, 'Times New Roman', serif; line-height: 1.4; }
+            h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; margin-bottom: 0.25rem; }
+            h2 { font-size: 15px; font-variant: small-caps; letter-spacing: 0.6px; margin-top: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+            h3 { font-size: 12.5px; font-weight: 600; }
+            p, li { font-size: 12px; }
+          `;
+        case 'mono':
+          return `
+            ${base}
+            body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; line-height: 1.5; }
+            h1 { font-size: 18px; margin-bottom: 0.15rem; }
+            h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 0.6rem; }
+            h3 { font-size: 11.5px; font-weight: 700; }
+            p, li { font-size: 11.5px; }
+          `;
+        case 'corporate':
+          return `
+            ${base}
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.45; }
+            h1 { font-size: 22px; letter-spacing: -0.01em; margin-bottom: 0.25rem; }
+            h2 { font-size: 14px; color: #1d4ed8; margin-top: 0.9rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 2px; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 12px; }
+            a { color: #1d4ed8; text-decoration: none; }
+          `;
+        case 'ats':
+          return `
+            ${base}
+            body { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; line-height: 1.4; }
+            h1 { font-size: 22px; margin-bottom: 0.25rem; }
+            h2 { font-size: 14px; margin-top: 0.9rem; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 12px; }
+          `;
+        case 'accent':
+          return `
+            ${base}
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; }
+            h1 { font-size: 22px; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+            h2 { font-size: 14px; color: #7c3aed; margin-top: 0.9rem; font-weight: 600; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 12px; }
+            a { color: #7c3aed; text-decoration: none; }
+          `;
+        case 'a4':
+          return `
+            ${base}
+            @page { size: A4; margin: 1.8cm; }
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.4; }
+            h1 { font-size: 21px; margin-bottom: 0.2rem; }
+            h2 { font-size: 13.5px; color: #334155; margin-top: 0.8rem; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 11.5px; }
+          `;
+        case 'timeline':
+          return `
+            ${base}
+            body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; }
+            h1 { font-size: 22px; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+            h2 { font-size: 14px; color: #334155; margin-top: 1rem; border-left: 3px solid #e5e7eb; padding-left: 10px; }
+            h3 { font-size: 12px; font-weight: 600; }
+            p, li { font-size: 12px; }
+          `;
         case 'modern':
         default:
           return `

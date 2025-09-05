@@ -55,6 +55,46 @@ export async function generateResume(args: GenerateResumeArgs): Promise<string> 
 - Serif typography; small-caps section headers;
 - Clean typographic hierarchy; understated rules and spacing;
 - Strictly formal tone; no icons/emojis.`;
+      case 'minimal':
+        return `Theme details (Minimal):
+- Clean sans-serif; grayscale accents only;
+- Thin rules and ample whitespace;
+- Keep headings simple; no decorative elements.`;
+      case 'executive':
+        return `Theme details (Executive):
+- Serif typography; small-caps section heads;
+- Conservative spacing and classic rules;
+- Formal voice, suited to leadership roles.`;
+      case 'mono':
+        return `Theme details (Monospace Tech):
+- Monospace typography; code-like, no color;
+- Uppercase section headers; compact spacing;
+- Avoid decorative elements.`;
+      case 'corporate':
+        return `Theme details (Corporate Blue):
+- Sans-serif with blue accents; thin rules;
+- Professional tone; consistent terminology;
+- Use blue (#1d4ed8) for emphasis links/headers.`;
+      case 'ats':
+        return `Theme details (ATS B&W):
+- No color; bold only for headings;
+- Absolute clarity and simplicity; no icons/emojis;
+- Avoid uncommon symbols.`;
+      case 'accent':
+        return `Theme details (Modern Accent):
+- Sans-serif with purple accent (#7c3aed);
+- Crisp hierarchy; concise impact bullets;
+- Light, modern feel.`;
+      case 'a4':
+        return `Theme details (A4 European):
+- Sans-serif tuned for A4 page and margins;
+- Slightly smaller body; conservative spacing;
+- Keep sections succinct.`;
+      case 'timeline':
+        return `Theme details (Timeline):
+- Emphasize chronology with distinct section separators;
+- Crisp sans-serif; consistent tense and date styling;
+- Keep bullets terse and outcome-focused.`;
       case 'modern':
       default:
         return `Theme details (modern):
