@@ -9,10 +9,13 @@ import { getResume, saveResume, getPersonalDetails } from "@/lib/storage";
 import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
 import { computeCoverageScore, canonicalizeToken } from "@/lib/analysis";
 import { assessFit, coachGaps } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+type ApplicationStatus = 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +44,7 @@ const ResumeDetail = () => {
   const [hasChanges, setHasChanges] = useState(false);
   // Default to preview mode so users see the rendered résumé first
   const [editorMode, setEditorMode] = useState<'preview' | 'edit'>('preview');
+  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>('not_applied');
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
   const isMobile = useIsMobile();
@@ -62,6 +66,7 @@ const ResumeDetail = () => {
         setMarkdown(data.markdown);
         setOriginalMarkdown(data.markdown);
         setJobDescription(data.jdRaw);
+        setApplicationStatus((data.meta && (data.meta.applicationStatus as ApplicationStatus)) || 'not_applied');
         if (data.derived) {
           setDerivedSkills(data.derived.skills || []);
           setDerivedKeywords(data.derived.keywords || []);
@@ -112,6 +117,7 @@ const ResumeDetail = () => {
           jdRaw: jobDescription,
           derived: { skills: resumeSkills, keywords: jdKeywords },
           fit: (resumeData as any).fit,
+          meta: { ...((resumeData as any).meta || {}), applicationStatus },
         });
 
         updateResume(id, {
@@ -137,6 +143,27 @@ const ResumeDetail = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (status: ApplicationStatus) => {
+    setApplicationStatus(status);
+    if (!id) return;
+    try {
+      const current = await getResume(id);
+      if (current) {
+        await saveResume(id, {
+          markdown: current.markdown,
+          jdRaw: current.jdRaw,
+          derived: current.derived || { skills: [], keywords: [] },
+          fit: current.fit,
+          meta: { ...(current.meta || {}), applicationStatus: status },
+        });
+        updateResume(id, { updatedAt: new Date().toISOString(), applicationStatus: status });
+        toast({ title: 'Status updated', description: 'Application status saved.' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to update status. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -322,6 +349,30 @@ const ResumeDetail = () => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
+            <CardTitle>Application Status</CardTitle>
+            <CardDescription>Track the status of this application.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Status</div>
+              <Select value={applicationStatus} onValueChange={(v) => handleStatusChange(v as ApplicationStatus)}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="applied">Applied</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="not_applied">Not Applied</SelectItem>
+                  <SelectItem value="unsuccessful">Unsuccessful</SelectItem>
+                  <SelectItem value="successful">Successful</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Fit Analysis</CardTitle>
@@ -365,6 +416,7 @@ const ResumeDetail = () => {
                           gaps: result.gaps || [],
                           seniority: (result.seniority as any) ?? undefined,
                         },
+                        meta: { ...(current.meta || {}), applicationStatus },
                       });
                       updateResume(id, { updatedAt: new Date().toISOString(), fitScore: result.score ?? 0 });
                     }

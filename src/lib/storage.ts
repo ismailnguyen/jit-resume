@@ -40,6 +40,9 @@ interface JITDatabase extends DBSchema {
         gaps?: string[];
         seniority?: 'under' | 'exact' | 'over';
       };
+      meta?: {
+        applicationStatus?: 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
+      };
     };
   };
 }
@@ -96,6 +99,9 @@ export async function saveResume(id: string, data: {
     strengths?: string[];
     gaps?: string[];
     seniority?: 'under' | 'exact' | 'over';
+  };
+  meta?: {
+    applicationStatus?: 'applied' | 'in_progress' | 'not_applied' | 'unsuccessful' | 'successful';
   };
 }) {
   try {
