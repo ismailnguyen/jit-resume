@@ -44,6 +44,10 @@ const NewResume = () => {
       if (!text.trim()) throw new Error('No text content extracted');
       setJobDescription(text.trim());
       setJdSourceUrl(importUrl.trim());
+      // Autofill company/location from metadata if available
+      const meta = extractCompanyLocation(doc);
+      if (meta.company && !company) setCompany(meta.company);
+      if (meta.location && !location) setLocation(meta.location);
       toast({ title: 'Imported', description: 'Job description imported from URL.' });
     } catch (e) {
       // Transparent fallback: try CORS-friendly text extraction proxy
@@ -57,6 +61,12 @@ const NewResume = () => {
         if (!cleaned) throw new Error('No text content extracted');
         setJobDescription(cleaned);
         setJdSourceUrl(importUrl.trim());
+        // Best-effort company from URL host
+        try {
+          const u = new URL(importUrl);
+          const host = u.hostname.replace(/^www\./, '');
+          if (!company) setCompany(host.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+        } catch {}
         toast({ title: 'Imported', description: 'We extracted the job description. Please review and clean it if needed.' });
       } catch (err) {
         toast({
@@ -69,6 +79,26 @@ const NewResume = () => {
       setImporting(false);
     }
   };
+
+  function extractCompanyLocation(doc: Document): { company?: string; location?: string } {
+    const pick = (sel: string) => (doc.querySelector(sel) as HTMLMetaElement | null)?.content?.trim();
+    const txt = (sel: string) => doc.querySelector(sel)?.textContent?.trim();
+    const company = pick('meta[property="og:site_name"]')
+      || pick('meta[name="organization"]')
+      || pick('meta[name="company"]')
+      || txt('[itemprop="hiringOrganization"] [itemprop="name"]')
+      || txt('[itemtype*="Organization"] [itemprop="name"]')
+      || pick('meta[property="og:title"]');
+    let location = pick('meta[name="jobLocation"]') || pick('meta[property="job:location"]');
+    if (!location) {
+      const locality = txt('[itemprop="addressLocality"]') || '';
+      const region = txt('[itemprop="addressRegion"]') || '';
+      const country = txt('[itemprop="addressCountry"]') || '';
+      const parts = [locality, region, country].filter(Boolean);
+      if (parts.length) location = parts.join(', ');
+    }
+    return { company: company || undefined, location: location || undefined };
+  }
 
   const handleGenerate = async () => {
     if (!settings.openAIApiKey) {
