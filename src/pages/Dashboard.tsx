@@ -10,6 +10,21 @@ const Dashboard = () => {
   const hasApiKey = !!settings.openAIApiKey;
   const hasPersonalDetails = !!personalMeta;
   const resumeCount = resumesIndex.length;
+  const statusCounts = resumesIndex.reduce<Record<string, number>>((acc, r) => {
+    const s = (r.applicationStatus || 'not_applied');
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+  const fitBuckets = [
+    { label: '0–49', min: 0, max: 49 },
+    { label: '50–59', min: 50, max: 59 },
+    { label: '60–69', min: 60, max: 69 },
+    { label: '70–79', min: 70, max: 79 },
+    { label: '80–100', min: 80, max: 100 },
+  ].map(b => ({
+    ...b,
+    count: resumesIndex.filter(r => typeof r.fitScore === 'number' && (r.fitScore as number) >= b.min && (r.fitScore as number) <= b.max).length,
+  }));
 
   // Compute first-run steps and which remain
   const steps = [
@@ -46,6 +61,48 @@ const Dashboard = () => {
           Ready to create your next tailored résumé? Here's what you can do.
         </p>
       </div>
+
+      {/* Analytics */}
+      {resumeCount > 0 && (
+        <div className="mb-8 mt-8 grid md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Applications by Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {['not_applied','applied','unsuccessful','successful'].map((s) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <div className="w-28 capitalize text-muted-foreground">{s.replace('_',' ')}</div>
+                    <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${((statusCounts[s]||0)/Math.max(1,resumeCount))*100}%` }} />
+                    </div>
+                    <div className="w-8 text-right tabular-nums">{statusCounts[s]||0}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Fit Score Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {fitBuckets.map((b) => (
+                  <div key={b.label} className="flex items-center gap-2">
+                    <div className="w-16 text-muted-foreground">{b.label}</div>
+                    <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
+                      <div className="h-full bg-secondary" style={{ width: `${((b.count)/Math.max(1,resumeCount))*100}%` }} />
+                    </div>
+                    <div className="w-8 text-right tabular-nums">{b.count}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Setup Status Cards */}
       {(!hasApiKey || !hasPersonalDetails) && (
