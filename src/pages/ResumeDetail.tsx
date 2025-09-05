@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { getResume, saveResume, getPersonalDetails } from "@/lib/storage";
-import { ArrowLeft, Download, Save, Copy, FileText } from "lucide-react";
+import { ArrowLeft, Download, Save, FileText, AlertTriangle } from "lucide-react";
 import MDEditor from '@uiw/react-md-editor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
 import { computeCoverageScore } from "@/lib/analysis";
-import { assessFit } from "@/lib/openai";
+import { assessFit, coachGaps } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
@@ -45,6 +45,7 @@ const ResumeDetail = () => {
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>('not_applied');
   const [company, setCompany] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<string | undefined>(undefined);
+  const [canonicalDetails, setCanonicalDetails] = useState<string>("");
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
   const isMobile = useIsMobile();
@@ -58,6 +59,31 @@ const ResumeDetail = () => {
   useEffect(() => {
     setHasChanges(markdown !== originalMarkdown);
   }, [markdown, originalMarkdown]);
+
+  // Load canonical details for claim checking
+  useEffect(() => {
+    (async () => {
+      const canonical = await getPersonalDetails();
+      setCanonicalDetails(canonical || '');
+    })();
+  }, []);
+
+  // Keyboard shortcuts within detail: Save (Cmd/Ctrl+S), Toggle editor (Cmd/Ctrl+E)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!saving && hasChanges) void handleSave();
+      } else if (e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        setEditorMode((m) => (m === 'preview' ? 'edit' : 'preview'));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [saving, hasChanges]);
 
   const loadResume = async (resumeId: string) => {
     try {
@@ -162,6 +188,30 @@ const ResumeDetail = () => {
         setDerivedKeywords(jdKeywords);
         setComputedScore(score);
         setOriginalMarkdown(markdown);
+        // Auto re-generate coaching on save if content changed and API key available
+        if (settings.openAIApiKey && markdown !== originalMarkdown) {
+          try {
+            const canonical = await getPersonalDetails();
+            const coachingResult = await coachGaps({
+              apiKey: settings.openAIApiKey,
+              model: settings.model,
+              jobDescription,
+              personalDetails: canonical || '',
+              generatedResume: markdown,
+            });
+            setCoaching({ suggestions: coachingResult.suggestions || [], guidance: coachingResult.guidance || '' });
+            await saveResume(id, {
+              markdown,
+              jdRaw: jobDescription,
+              derived: { skills: resumeSkills, keywords: jdKeywords },
+              fit: newFit,
+              coaching: coachingResult,
+              meta: { ...((resumeData as any).meta || {}), applicationStatus },
+            });
+          } catch (e) {
+            // Ignore coaching failure on save
+          }
+        }
         if (typeof newFit?.score === 'number') {
           setFitScore(newFit.score);
           setFitSummary(newFit.summary || '');
@@ -219,9 +269,10 @@ const ResumeDetail = () => {
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { color: #0f172a; }
         a { color: inherit; text-decoration: none; }
-        ul, ol { padding-left: 1.25rem; }
-        h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
-        p, li { page-break-inside: avoid; }
+        ul, ol { padding-left: 1.25rem; break-inside: avoid; page-break-inside: avoid; }
+        h1, h2, h3, h4, h5, h6 { page-break-after: avoid; break-after: avoid; }
+        p, li { page-break-inside: avoid; break-inside: avoid; }
+        h2 + ul, h3 + ul { page-break-inside: avoid; break-inside: avoid; }
         .section { margin-top: 0.75rem; }
       `;
       switch (settings.pdfTheme) {
@@ -350,7 +401,7 @@ const ResumeDetail = () => {
         <head>
           <meta charset="utf-8" />
           <title>Resume PDF</title>
-          <style>${themeCSS}</style>
+          <style>${themeCSS}${settings.additionalPrintCss ? `\n/* Custom */\n${settings.additionalPrintCss}` : ''}</style>
         </head>
         <body>${htmlContent}</body>
       </html>
@@ -359,6 +410,11 @@ const ResumeDetail = () => {
     printWindow.focus();
     printWindow.print();
     printWindow.close();
+  };
+
+  const applySuggestionToExperience = (s: string) => {
+    setMarkdown((prev) => insertIntoExperience(prev, s));
+    toast({ title: 'Applied', description: 'Suggestion added to Experience section.' });
   };
 
   if (loading) {
@@ -523,7 +579,14 @@ const ResumeDetail = () => {
                 <ul className="list-disc pl-6 space-y-2 text-sm">
                   {coaching.suggestions.map((s, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="flex-1">{s}</span>
+                      <span className="flex-1">
+                        {s}
+                        {canonicalDetails && !isSuggestionSupported(s, canonicalDetails) && (
+                          <span className="inline-flex items-center ml-2 text-amber-600" title="May not be supported by your personal details">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </span>
                       <Button
                         variant="outline"
                         size="xs"
@@ -536,6 +599,13 @@ const ResumeDetail = () => {
                         }}
                       >
                         Copy
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="xs"
+                        onClick={() => applySuggestionToExperience(s)}
+                      >
+                        Apply
                       </Button>
                     </li>
                   ))}
@@ -708,3 +778,40 @@ const ResumeDetail = () => {
 };
 
 export default ResumeDetail;
+
+// Heuristic claim checking: ensure enough tokens are present in canonical details
+function isSuggestionSupported(s: string, canonical: string): boolean {
+  const tokenize = (t: string) => t
+    .toLowerCase()
+    .replace(/[^a-z0-9+.#\-\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 4);
+  const sTokens = new Set(tokenize(s));
+  if (sTokens.size === 0) return true;
+  const canonTokens = new Set(tokenize(canonical));
+  let present = 0;
+  for (const t of sTokens) if (canonTokens.has(t)) present++;
+  const ratio = present / sTokens.size;
+  return ratio >= 0.4; // require at least 40% term overlap
+}
+
+// Insert suggestion as a bullet at the top of the Experience section (best-effort)
+function insertIntoExperience(md: string, suggestion: string): string {
+  const lines = md.split(/\r?\n/);
+  const headingIdx = lines.findIndex((l) => /^#{1,6}\s*experience\b/i.test(l.trim()));
+  const bullet = `- ${suggestion}`;
+  if (headingIdx === -1) {
+    return md + `\n\n## Experience\n${bullet}\n`;
+  }
+  let end = lines.length;
+  for (let i = headingIdx + 1; i < lines.length; i++) {
+    if (/^#{1,6}\s+/.test(lines[i])) { end = i; break; }
+  }
+  // Insert after headingIdx, before first bullet block
+  const before = lines.slice(0, headingIdx + 1);
+  const section = lines.slice(headingIdx + 1, end);
+  const after = lines.slice(end);
+  return [...before, bullet, ...section, ...after].join('\n');
+}
+
+// no-op placeholder removed; applySuggestionToExperience is defined inside component
