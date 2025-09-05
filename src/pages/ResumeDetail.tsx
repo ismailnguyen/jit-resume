@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
 import { computeCoverageScore } from "@/lib/analysis";
-import { assessFit, coachGaps } from "@/lib/openai";
+import { assessFit } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
@@ -36,7 +36,6 @@ const ResumeDetail = () => {
   const [fitSeniority, setFitSeniority] = useState<'under' | 'exact' | 'over' | null>(null);
   const [fitLoading, setFitLoading] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
-  const [coachingLoading, setCoachingLoading] = useState(false);
   const [coaching, setCoaching] = useState<{ suggestions: string[]; guidance?: string } | null>(null);
   const [showJobDescription, setShowJobDescription] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -72,6 +71,9 @@ const ResumeDetail = () => {
         if (data.derived) {
           setDerivedSkills(data.derived.skills || []);
           setDerivedKeywords(data.derived.keywords || []);
+        }
+        if (data.coaching) {
+          setCoaching({ suggestions: data.coaching.suggestions || [], guidance: data.coaching.guidance || '' });
         }
         if (data.fit) {
           setFitScore(typeof data.fit.score === 'number' ? data.fit.score : null);
@@ -119,6 +121,7 @@ const ResumeDetail = () => {
           jdRaw: jobDescription,
           derived: { skills: resumeSkills, keywords: jdKeywords },
           fit: (resumeData as any).fit,
+          coaching: (resumeData as any).coaching,
           meta: { ...((resumeData as any).meta || {}), applicationStatus },
         });
 
@@ -159,6 +162,7 @@ const ResumeDetail = () => {
           jdRaw: current.jdRaw,
           derived: current.derived || { skills: [], keywords: [] },
           fit: current.fit,
+          coaching: current.coaching,
           meta: { ...(current.meta || {}), applicationStatus: status },
         });
         updateResume(id, { updatedAt: new Date().toISOString(), applicationStatus: status });
@@ -385,6 +389,7 @@ const ResumeDetail = () => {
                           gaps: result.gaps || [],
                           seniority: (result.seniority as any) ?? undefined,
                         },
+                        coaching: current.coaching,
                         meta: { ...(current.meta || {}), applicationStatus },
                       });
                       updateResume(id, { updatedAt: new Date().toISOString(), fitScore: result.score ?? 0 });
@@ -399,35 +404,7 @@ const ResumeDetail = () => {
               >
                 {fitLoading ? 'Scoring...' : 'Re-score Fit'}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  if (!settings.openAIApiKey) {
-                    toast({ title: 'API Key Required', description: 'Set your OpenAI API key in Settings first.', variant: 'destructive' });
-                    return;
-                  }
-                  setCoachingLoading(true);
-                  try {
-                    const canonical = await getPersonalDetails();
-                    const result = await coachGaps({
-                      apiKey: settings.openAIApiKey,
-                      model: settings.model,
-                      jobDescription,
-                      personalDetails: canonical || '',
-                      generatedResume: markdown,
-                    });
-                    setCoaching({ suggestions: result.suggestions || [], guidance: result.guidance || '' });
-                  } catch (e) {
-                    toast({ title: 'Coaching Failed', description: e instanceof Error ? e.message : 'Could not generate suggestions.', variant: 'destructive' });
-                  } finally {
-                    setCoachingLoading(false);
-                  }
-                }}
-                disabled={coachingLoading}
-              >
-                {coachingLoading ? 'Coaching…' : 'Get Gap Coaching'}
-              </Button>
+              {/* Coaching is generated during resume creation and displayed below */}
             </div>
           </CardHeader>
           <CardContent className="space-y-3">

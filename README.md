@@ -7,7 +7,7 @@ Generate a tailored, ATS-friendly résumé for any job in seconds. Privacy‑fir
 - Tailored résumé generation (Markdown → print‑ready PDF)
 - ATS keyword analysis with weighted score (synonym‑aware; tunable weights)
 - HR‑style Fit Score with strengths/gaps/seniority
-- Gap coaching (bullet‑level suggestions to close JD gaps)
+- Gap coaching (bullet‑level suggestions to close JD gaps, generated automatically on creation)
 - Smart reorder of bullets by JD relevance (applied automatically on generation)
 - Side‑by‑side editor + live preview (desktop)
 - PDF themes with visual previews (Modern/Classic/Compact)
@@ -46,7 +46,7 @@ In the app:
 - Scores:
   - ATS score shows coverage of top JD keywords found in your résumé, weighted by section (Skills > Experience > Summary > Other). Weights are adjustable in Settings.
   - Fit score estimates recruiter‑screen likelihood via LLM; re‑score anytime.
-- Coaching: “Get Gap Coaching” suggests truthful bullet improvements. Copy and integrate.
+- Coaching: bullet‑level suggestions are generated on creation. Copy and integrate.
 - Smart Reorder: reorders bullet blocks by JD relevance (synonym‑aware).
 - Tags & Filters: add tags to resumes, filter by search and tags in Library.
 
