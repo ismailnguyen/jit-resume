@@ -93,7 +93,7 @@ const Dashboard = () => {
                   <div key={b.label} className="flex items-center gap-2">
                     <div className="w-16 text-muted-foreground">{b.label}</div>
                     <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
-                      <div className="h-full bg-secondary" style={{ width: `${((b.count)/Math.max(1,resumeCount))*100}%` }} />
+                      <div className="h-full bg-primary" style={{ width: `${((b.count)/Math.max(1,resumeCount))*100}%` }} />
                     </div>
                     <div className="w-8 text-right tabular-nums">{b.count}</div>
                   </div>
