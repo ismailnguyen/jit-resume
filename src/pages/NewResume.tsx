@@ -202,11 +202,11 @@ const NewResume = () => {
         (['en','fr','de','es'] as const).forEach(lang => { if (scores[lang] > bestScore) { best = lang; bestScore = scores[lang]; } });
         return best;
       };
-      beginStep('Analyzing inputs');
+      beginStep('Analyzing job description');
       const resolvedLang: 'en'|'fr'|'de'|'es' = language === 'auto' 
         ? detectLanguage(jobDescription)
         : (language === 'default' ? settings.defaultLanguage : language);
-      completeStep(`Language: ${resolvedLang}`);
+      completeStep(`Detected language: ${resolvedLang}`);
 
       // Generate resume
       beginStep('Generating tailored resume');
