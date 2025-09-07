@@ -138,7 +138,7 @@ const ResumeLibrary = () => {
       ) : (
         <div className="grid gap-4">
           {filtered.slice(0, visibleCount).map(resume => (
-            <Card key={resume.id}>
+            <Card key={resume.id} className="transition-colors hover:border-[#7c3aed]">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
