@@ -11,6 +11,7 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import { useStore } from "@/lib/store";
 
 const AppShell = () => {
@@ -49,7 +50,12 @@ const AppShell = () => {
   ] as const;
 
   return (
-  <div className="min-h-screen bg-gradient-subtle lg:flex">
+  <div className="relative min-h-screen bg-gradient-subtle">
+      {/* Animated background layer */}
+      <AnimatedBackground className="z-0" />
+
+      {/* Foreground app layout */}
+      <div className="relative z-10 lg:flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -178,6 +184,7 @@ const AppShell = () => {
         <main className="flex-1">
           <Outlet />
         </main>
+      </div>
       </div>
     </div>
   );
