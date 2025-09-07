@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { savePersonalDetails, getPersonalDetails } from "@/lib/storage";
-import { Save, Download, FileText } from "lucide-react";
-import MDEditor from '@uiw/react-md-editor';
+import { Save, FileText } from "lucide-react";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 const TEMPLATE_CONTENT = `# Personal Details
 - **Full Name:** Your Full Name
@@ -70,6 +70,7 @@ const PersonalDetails = () => {
   const { personalMeta, setPersonalMeta } = useStore();
   const { toast } = useToast();
   const [markdown, setMarkdown] = useState("");
+  const [editorResetKey, setEditorResetKey] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -133,6 +134,8 @@ const PersonalDetails = () => {
 
   const insertTemplate = () => {
     setMarkdown(TEMPLATE_CONTENT);
+    // Force the MDX editor to remount so it reflects external content changes
+    setEditorResetKey((k) => k + 1);
     toast({
       title: "Template Inserted",
       description: "You can now customize the template with your information.",
@@ -197,7 +200,7 @@ const PersonalDetails = () => {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Markdown Editor</h2>
+          <h2 className="text-lg font-semibold">Your canonical Resum&eacute;</h2>
             <Button variant="outline" size="sm" onClick={insertTemplate}>
               <FileText className="h-4 w-4 mr-1" />
               Insert template
@@ -205,13 +208,11 @@ const PersonalDetails = () => {
         </div>
         
         <div className="min-h-96">
-          <MDEditor
+          <MarkdownEditor
             value={markdown}
             onChange={(val) => setMarkdown(val || "")}
-            preview="edit"
-            hideToolbar={false}
-            data-color-mode="light"
             height={600}
+            resetKey={editorResetKey}
           />
         </div>
         

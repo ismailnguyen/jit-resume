@@ -173,18 +173,18 @@ All colors MUST be HSL.
 
   /* Mobile readability tweaks */
   @media (max-width: 768px) {
-    /* Increase editor and preview font sizes for better legibility */
+    /* Legacy (uiw) editor: keep for safety */
     .w-md-editor,
-    .wmde-markdown {
-      font-size: 16px !important;
-    }
-    /* Slightly larger toolbar hit targets */
-    .w-md-editor .w-md-editor-toolbar {
-      padding: 6px 8px;
-    }
-    .w-md-editor .w-md-editor-toolbar li > button {
-      padding: 6px;
-    }
+    .wmde-markdown { font-size: 16px !important; }
+
+    /* MDXEditor readability and tap targets */
+    .jit-mdxeditor { font-size: 16px; }
+    .jit-mdxeditor .mdxeditor-toolbar,
+    .jit-mdxeditor [role="toolbar"] { padding: 6px 8px; }
+    /* Allow toolbar items to wrap on narrow screens */
+    .jit-mdxeditor .mdxeditor-toolbar,
+    .jit-mdxeditor [role="toolbar"] { flex-wrap: wrap; gap: 6px 8px; }
+    .jit-mdxeditor [role="toolbar"] button { padding: 6px; flex: 0 0 auto; }
   }
 }
 

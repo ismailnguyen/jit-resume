@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { getResume, saveResume, getPersonalDetails } from "@/lib/storage";
 import { ArrowLeft, Download, Save, FileText, AlertTriangle } from "lucide-react";
-import MDEditor from '@uiw/react-md-editor';
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
@@ -40,8 +40,6 @@ const ResumeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  // Default to preview mode so users see the rendered résumé first
-  const [editorMode, setEditorMode] = useState<'preview' | 'edit'>('preview');
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>('not_applied');
   const [company, setCompany] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<string | undefined>(undefined);
@@ -78,7 +76,6 @@ const ResumeDetail = () => {
         if (!saving && hasChanges) void handleSave();
       } else if (e.key.toLowerCase() === 'e') {
         e.preventDefault();
-        setEditorMode((m) => (m === 'preview' ? 'edit' : 'preview'));
       }
     };
     window.addEventListener('keydown', onKey);
@@ -522,7 +519,7 @@ const ResumeDetail = () => {
             <div className="space-y-2">
               <div className="text-sm font-medium">Status</div>
               <Select value={applicationStatus} onValueChange={(v) => handleStatusChange(v as ApplicationStatus)}>
-                <SelectTrigger className="w-[240px]">
+                <SelectTrigger className="w-full sm:w-[240px]">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -637,57 +634,17 @@ const ResumeDetail = () => {
                   Edit your tailored resume. Changes are saved locally on your device.
                 </CardDescription>
               </div>
-              {/* Show preview/edit toggles only on mobile/tablet */}
-              <div className="lg:hidden">
-                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v as 'preview' | 'edit')}>
-                  <TabsList>
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                    <TabsTrigger value="edit">Edit</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Mobile/tablet: toggle between preview and edit */}
-            <div className="lg:hidden">
-              <div className="min-h-96">
-                <MDEditor
-                  value={markdown}
-                  onChange={(val) => setMarkdown(val || "")}
-                  preview={editorMode}
-                  hideToolbar={false}
-                  data-color-mode="light"
-                  height={isMobile ? 560 : 520}
-                  style={{ fontSize: isMobile ? 16 : 14 }}
-                />
-              </div>
-            </div>
-
-            {/* Desktop: side-by-side */}
-            <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-              <div>
-                <MDEditor
-                  value={markdown}
-                  onChange={(val) => setMarkdown(val || "")}
-                  preview={'edit'}
-                  hideToolbar={false}
-                  data-color-mode="light"
-                  height={600}
-                  style={{ fontSize: 14 }}
-                />
-              </div>
-              <div>
-                <MDEditor
-                  value={markdown}
-                  onChange={() => {}}
-                  preview={'preview'}
-                  hideToolbar={true}
-                  data-color-mode="light"
-                  height={600}
-                  style={{ fontSize: 14 }}
-                />
-              </div>
+            <div>
+              <MarkdownEditor
+                value={markdown}
+                onChange={(val) => setMarkdown(val || "")}
+                height={isMobile ? 560 : 520}
+                enableModes
+                diffBase={canonicalDetails}
+              />
             </div>
           </CardContent>
         </Card>
