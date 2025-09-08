@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,15 @@ const ResumeDetail = () => {
   const [company, setCompany] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<string | undefined>(undefined);
   const [canonicalDetails, setCanonicalDetails] = useState<string>("");
+  const initialSyncRef = useRef(true);
+  const initialSyncUntilRef = useRef<number>(0);
+
+  // Normalize markdown to avoid false positives from editor normalization
+  const normalizeForChangeCheck = (s: string) =>
+    (s || "")
+      .replace(/\r\n/g, "\n") // CRLF -> LF
+      .replace(/[ \t]+$/gm, "") // strip trailing spaces per line
+      .replace(/\s+$/g, ""); // trim trailing whitespace/newlines at EOF
 
   const resumeMeta = resumesIndex.find(r => r.id === id);
   const isMobile = useIsMobile();
@@ -55,7 +64,9 @@ const ResumeDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    setHasChanges(markdown !== originalMarkdown);
+    setHasChanges(
+      normalizeForChangeCheck(markdown) !== normalizeForChangeCheck(originalMarkdown)
+    );
   }, [markdown, originalMarkdown]);
 
   // Load canonical details for claim checking
@@ -86,6 +97,9 @@ const ResumeDetail = () => {
     try {
       const data = await getResume(resumeId);
       if (data) {
+        // For a freshly loaded resume, allow initial baseline sync window
+        initialSyncRef.current = true;
+        initialSyncUntilRef.current = Date.now() + 1000; // 1s grace for editor normalization
         setMarkdown(data.markdown);
         setOriginalMarkdown(data.markdown);
         setJobDescription(data.jdRaw);
@@ -131,6 +145,26 @@ const ResumeDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditorChange = (val: string) => {
+    const next = val || "";
+    setMarkdown(next);
+    // On first editor emission after load, adopt editor-normalized content as baseline
+    if (initialSyncRef.current) {
+      initialSyncRef.current = false;
+      setOriginalMarkdown(next);
+      return;
+    }
+    // During a short grace window after load, keep baseline aligned with editor
+    if (Date.now() < initialSyncUntilRef.current) {
+      setOriginalMarkdown(next);
+      return;
+    }
+    // Keep baseline in sync for formatting-only editor changes
+    if (normalizeForChangeCheck(next) === normalizeForChangeCheck(originalMarkdown)) {
+      setOriginalMarkdown(next);
     }
   };
 
@@ -640,7 +674,7 @@ const ResumeDetail = () => {
             <div>
               <MarkdownEditor
                 value={markdown}
-                onChange={(val) => setMarkdown(val || "")}
+                onChange={handleEditorChange}
                 height={isMobile ? 560 : 520}
                 enableModes
                 diffBase={canonicalDetails}
