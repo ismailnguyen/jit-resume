@@ -66,7 +66,7 @@ const AppShell = () => {
 
       {/* Sidebar */}
       <div className={cn(
-        "w-72 flex-shrink-0 bg-card border-r shadow-large transition-transform lg:sticky lg:top-0 lg:h-screen lg:z-0 lg:translate-x-0 lg:inset-0",
+        "w-72 flex-shrink-0 border-none transition-transform lg:sticky lg:top-0 lg:h-screen lg:z-0 lg:translate-x-0 lg:inset-0",
         sidebarOpen ? "fixed inset-y-0 left-0 z-50 translate-x-0" : "fixed inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0"
       )}>
         <div className="flex h-full flex-col overflow-y-auto">
@@ -141,49 +141,8 @@ const AppShell = () => {
       </div>
 
       {/* Main content */}
-  <div className="flex-1">
-        {/* Top bar */}
-        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b">
-          <div className="flex h-16 items-center justify-between px-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            
-            <div className="flex-1 lg:flex-none">
-              <h1 className="text-lg font-semibold truncate">
-                {navigation.find(item => item.href === location.pathname)?.name || "Dashboard"}
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              {location.pathname !== '/app/new' && canUseNewResume && (
-                <Link
-                  to="/app/new"
-                  className={cn(
-                    "relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold",
-                    "bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-glow",
-                    "transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:from-primary hover:to-primary/95",
-                    "motion-reduce:transition-none"
-                  )}
-                >
-                  <span className="absolute inset-0 rounded-xl border-2 border-dotted border-white/40 opacity-70 pointer-events-none animate-pulse" />
-                  <Plus className="h-4 w-4" />
-                  <span>New Resume</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Page content */}
-        <main className="flex-1">
-          <Outlet />
-        </main>
+      <div className="flex-1 bg-card md:ml-2 md:mr-2 md:mt-2 md:rounded-tl-[16px] md:rounded-tr-[16px] md:shadow-xl">
+        <Outlet />
       </div>
       </div>
     </div>
