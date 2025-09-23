@@ -44,6 +44,13 @@ interface JITDatabase extends DBSchema {
         suggestions: string[];
         guidance?: string;
       };
+      interviewPrep?: {
+        generatedAt: string;
+        summary?: string;
+        focusAreas?: string[];
+        practiceQuestions?: string[];
+        actionItems?: string[];
+      };
       meta?: {
         applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
         company?: string;
@@ -111,6 +118,13 @@ export async function saveResume(id: string, data: {
   coaching?: {
     suggestions: string[];
     guidance?: string;
+  };
+  interviewPrep?: {
+    generatedAt: string;
+    summary?: string;
+    focusAreas?: string[];
+    practiceQuestions?: string[];
+    actionItems?: string[];
   };
   meta?: {
     applicationStatus?: 'applied' | 'not_applied' | 'unsuccessful' | 'successful';

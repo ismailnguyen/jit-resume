@@ -298,3 +298,76 @@ export async function coachGaps(args: GapCoachingArgs): Promise<GapCoachingResul
     return { suggestions: [], guidance: content?.slice(0, 240) };
   }
 }
+
+// Interview preparation guidance
+export interface InterviewPrepArgs {
+  apiKey: string;
+  model: string;
+  jobDescription: string;
+  personalDetails: string;
+  generatedResume: string;
+}
+
+export interface InterviewPrepGuide {
+  summary?: string;
+  focusAreas?: string[];
+  practiceQuestions?: string[];
+  actionItems?: string[];
+}
+
+const INTERVIEW_PREP_SYSTEM_PROMPT = `You are a seasoned interview coach preparing a candidate for an upcoming interview.
+
+Rules:
+- Base your advice strictly on the provided resume(s) and job description; do not invent new achievements.
+- Keep guidance actionable and specific.
+- Provide concise bullet lists.
+- Output JSON only, no narration.
+
+Schema:
+{
+  "summary": string,
+  "focusAreas": string[],
+  "practiceQuestions": string[],
+  "actionItems": string[]
+}`;
+
+export async function generateInterviewPrepGuide(args: InterviewPrepArgs): Promise<InterviewPrepGuide> {
+  const userPrompt = `# Job Description\n${args.jobDescription}\n\n# Candidate Canonical Resume (Markdown)\n${args.personalDetails}\n\n# Tailored Resume (Markdown)\n${args.generatedResume}\n\n# Task\nReturn a JSON object matching the schema with concrete interview preparation advice.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        { role: "system", content: INTERVIEW_PREP_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to generate interview preparation'}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+
+  try {
+    const parsed = JSON.parse(content);
+    const normalize = (value: unknown) => Array.isArray(value) ? value.filter((v) => typeof v === 'string') as string[] : [];
+    return {
+      summary: typeof parsed.summary === 'string' ? parsed.summary : '',
+      focusAreas: normalize(parsed.focusAreas),
+      practiceQuestions: normalize(parsed.practiceQuestions),
+      actionItems: normalize(parsed.actionItems),
+    };
+  } catch {
+    return { summary: content ? content.slice(0, 280) : '', focusAreas: [], practiceQuestions: [], actionItems: [] };
+  }
+}

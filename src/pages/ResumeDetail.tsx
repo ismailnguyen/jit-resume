@@ -6,16 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { getResume, saveResume, getPersonalDetails } from "@/lib/storage";
-import { ArrowLeft, Download, Save, FileText, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Download, Save, FileText, AlertTriangle, Loader2 } from "lucide-react";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
 import { computeCoverageScore } from "@/lib/analysis";
-import { assessFit, coachGaps } from "@/lib/openai";
+import { assessFit, coachGaps, generateInterviewPrepGuide } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
+
+type InterviewPrepRecord = {
+  generatedAt: string;
+  summary?: string;
+  focusAreas?: string[];
+  practiceQuestions?: string[];
+  actionItems?: string[];
+};
 
 const ResumeDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +44,9 @@ const ResumeDetail = () => {
   const [fitSeniority, setFitSeniority] = useState<'under' | 'exact' | 'over' | null>(null);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [coaching, setCoaching] = useState<{ suggestions: string[]; guidance?: string } | null>(null);
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrepRecord | null>(null);
+  const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
+  const [interviewPrepError, setInterviewPrepError] = useState<string | null>(null);
   const [showJobDescription, setShowJobDescription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -114,6 +125,11 @@ const ResumeDetail = () => {
         }
         if (data.coaching) {
           setCoaching({ suggestions: data.coaching.suggestions || [], guidance: data.coaching.guidance || '' });
+        }
+        if (data.interviewPrep) {
+          setInterviewPrep(data.interviewPrep);
+        } else {
+          setInterviewPrep(null);
         }
         if (data.fit) {
           setFitScore(typeof data.fit.score === 'number' ? data.fit.score : null);
@@ -206,6 +222,7 @@ const ResumeDetail = () => {
           derived: { skills: resumeSkills, keywords: jdKeywords },
           fit: newFit,
           coaching: (resumeData as any).coaching,
+          interviewPrep: (resumeData as any).interviewPrep,
           meta: { ...((resumeData as any).meta || {}), applicationStatus },
         });
 
@@ -237,6 +254,7 @@ const ResumeDetail = () => {
               derived: { skills: resumeSkills, keywords: jdKeywords },
               fit: newFit,
               coaching: coachingResult,
+              interviewPrep: (resumeData as any).interviewPrep,
               meta: { ...((resumeData as any).meta || {}), applicationStatus },
             });
           } catch (e) {
@@ -279,6 +297,7 @@ const ResumeDetail = () => {
           derived: current.derived || { skills: [], keywords: [] },
           fit: current.fit,
           coaching: current.coaching,
+          interviewPrep: current.interviewPrep,
           meta: { ...(current.meta || {}), applicationStatus: status },
         });
         updateResume(id, { updatedAt: new Date().toISOString(), applicationStatus: status });
@@ -286,6 +305,80 @@ const ResumeDetail = () => {
       }
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to update status. Please try again.', variant: 'destructive' });
+    }
+  };
+
+  const handleInterviewPrep = async () => {
+    if (!id) return;
+    if (!settings.openAIApiKey) {
+      toast({
+        title: 'API key required',
+        description: 'Add your OpenAI API key in Settings to generate interview prep.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!jobDescription?.trim()) {
+      toast({
+        title: 'Job description needed',
+        description: 'Provide a job description to tailor interview preparation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setInterviewPrepError(null);
+    setInterviewPrepLoading(true);
+    try {
+      const canonical = canonicalDetails || (await getPersonalDetails()) || '';
+      const guide = await generateInterviewPrepGuide({
+        apiKey: settings.openAIApiKey,
+        model: settings.model,
+        jobDescription,
+        personalDetails: canonical,
+        generatedResume: markdown,
+      });
+
+      const normalizeList = (items?: string[]) =>
+        Array.isArray(items)
+          ? items
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item) => item.length > 0)
+          : [];
+
+      const record: InterviewPrepRecord = {
+        generatedAt: new Date().toISOString(),
+        summary: guide.summary?.trim() ? guide.summary.trim() : undefined,
+      };
+      const focusAreas = normalizeList(guide.focusAreas);
+      if (focusAreas.length) record.focusAreas = focusAreas;
+      const practiceQuestions = normalizeList(guide.practiceQuestions);
+      if (practiceQuestions.length) record.practiceQuestions = practiceQuestions;
+      const actionItems = normalizeList(guide.actionItems);
+      if (actionItems.length) record.actionItems = actionItems;
+
+      setInterviewPrep(record);
+
+      const current = await getResume(id);
+      if (current) {
+        await saveResume(id, {
+          markdown: current.markdown,
+          jdRaw: current.jdRaw,
+          derived: current.derived || { skills: [], keywords: [] },
+          fit: current.fit,
+          coaching: current.coaching,
+          interviewPrep: record,
+          meta: current.meta,
+        });
+      }
+
+      toast({ title: 'Interview prep ready', description: 'Tailored preparation guidance generated.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate interview preparation.';
+      setInterviewPrepError(message);
+      toast({ title: 'Interview prep failed', description: message, variant: 'destructive' });
+    } finally {
+      setInterviewPrepLoading(false);
     }
   };
 
@@ -549,7 +642,7 @@ const ResumeDetail = () => {
             <CardTitle>Application Status</CardTitle>
             <CardDescription>Track the status of this application.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="text-sm font-medium">Status</div>
               <Select value={applicationStatus} onValueChange={(v) => handleStatusChange(v as ApplicationStatus)}>
@@ -564,8 +657,112 @@ const ResumeDetail = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="pt-4 border-t border-dashed border-border/70 space-y-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-medium">Interview preparation</div>
+                  <p className="text-xs text-muted-foreground">Generate a tailored interview guide based on this resume and job.</p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleInterviewPrep}
+                  disabled={interviewPrepLoading || !settings.openAIApiKey || !jobDescription?.trim()}
+                >
+                  {interviewPrepLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Preparing…
+                    </>
+                  ) : (
+                    'Prepare for interview'
+                  )}
+                </Button>
+              </div>
+              {!settings.openAIApiKey && (
+                <p className="text-xs text-muted-foreground">Add your OpenAI API key in Settings to enable interview preparation.</p>
+              )}
+              {!jobDescription?.trim() && (
+                <p className="text-xs text-muted-foreground">Add a job description to unlock interview preparation guidance.</p>
+              )}
+              {interviewPrep && (
+                <p className="text-xs text-muted-foreground">Last generated {new Date(interviewPrep.generatedAt).toLocaleString()}</p>
+              )}
+              {interviewPrepError && (
+                <p className="text-xs text-destructive">{interviewPrepError}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
+
+        {(interviewPrep || interviewPrepLoading) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Interview Preparation Guide</CardTitle>
+              <CardDescription>Talking points and practice prompts.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {interviewPrepLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {interviewPrep ? 'Refreshing guide…' : 'Generating guide…'}
+                </div>
+              )}
+
+              {interviewPrep && (
+                <>
+                  {interviewPrep.summary && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Overview</div>
+                      <p className="text-muted-foreground">{interviewPrep.summary}</p>
+                    </div>
+                  )}
+                  {interviewPrep.focusAreas && interviewPrep.focusAreas.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Focus Areas</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewPrep.focusAreas.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewPrep.practiceQuestions && interviewPrep.practiceQuestions.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Practice Questions</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewPrep.practiceQuestions.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewPrep.actionItems && interviewPrep.actionItems.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Action Items</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewPrep.actionItems.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Generated {new Date(interviewPrep.generatedAt).toLocaleString()}
+                  </p>
+                </>
+              )}
+
+              {!interviewPrep && interviewPrepLoading && (
+                <p className="text-xs text-muted-foreground">Gathering preparation guidance…</p>
+              )}
+
+              {!interviewPrep && !interviewPrepLoading && (
+                <p className="text-xs text-muted-foreground">No interview preparation guidance available yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
