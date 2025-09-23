@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Eye, Trash2 } from "lucide-react";
 
 const ResumeLibrary = () => {
   const resumes = useStore((state) => state.resumesIndex);
@@ -182,9 +182,18 @@ const ResumeLibrary = () => {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <Button size="sm" onClick={() => handleView(resume.id)}>View</Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDelete(resume.id)}>Delete</Button>
-                </div>
+                  <Button size="sm" onClick={() => handleView(resume.id)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(resume.id)}
+                    aria-label={`Delete resume ${resume.title}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  </div>
               </CardContent>
             </Card>
           ))}
