@@ -371,3 +371,117 @@ export async function generateInterviewPrepGuide(args: InterviewPrepArgs): Promi
     return { summary: content ? content.slice(0, 280) : '', focusAreas: [], practiceQuestions: [], actionItems: [] };
   }
 }
+
+// Interview simulation scripting
+export interface InterviewSimulationArgs {
+  apiKey: string;
+  model: string;
+  jobDescription: string;
+  personalDetails: string;
+  generatedResume: string;
+}
+
+export interface InterviewSimulationScript {
+  scenario?: string;
+  interviewerPersona?: string;
+  openingHook?: string;
+  keyStories?: string[];
+  persuasionAngles?: string[];
+  objectionResponses?: string[];
+  behaviorTips?: string[];
+  closingStatement?: string;
+  followUpActions?: string[];
+  sampleDialogue?: {
+    prompt: string;
+    response: string;
+  }[];
+}
+
+const INTERVIEW_SIMULATION_SYSTEM_PROMPT = `You are an executive interview coach simulating a realistic conversation.
+
+Rules:
+- Ground all guidance in the provided resume(s) and job description; do not invent accomplishments.
+- Offer persuasive narratives that help the candidate sell their impact credibly.
+- Explain how to handle common objections and demonstrate executive presence.
+- Provide a short sample dialogue with the interviewer (Q) and candidate (A).
+- Output JSON only, following the supplied schema.
+
+Schema:
+{
+  "scenario": string,
+  "interviewerPersona": string,
+  "openingHook": string,
+  "keyStories": string[],
+  "persuasionAngles": string[],
+  "objectionResponses": string[],
+  "behaviorTips": string[],
+  "closingStatement": string,
+  "followUpActions": string[],
+  "sampleDialogue": [{ "prompt": string, "response": string }]
+}`;
+
+export async function generateInterviewSimulationScript(args: InterviewSimulationArgs): Promise<InterviewSimulationScript> {
+  const userPrompt = `# Job Description\n${args.jobDescription}\n\n# Candidate Canonical Resume (Markdown)\n${args.personalDetails}\n\n# Tailored Resume (Markdown)\n${args.generatedResume}\n\n# Task\nReturn a JSON object matching the schema with a persuasive interview simulation script.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        { role: "system", content: INTERVIEW_SIMULATION_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Failed to generate interview simulation'}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || "";
+
+  try {
+    const parsed = JSON.parse(content);
+    const toStringOrUndefined = (value: unknown) => typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+    const toStringArray = (value: unknown) =>
+      Array.isArray(value)
+        ? value
+            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+            .filter((item) => item.length > 0)
+        : [];
+    const toDialogue = (value: unknown) =>
+      Array.isArray(value)
+        ? value
+            .map((item) => {
+              if (!item || typeof item !== 'object') return null;
+              const prompt = toStringOrUndefined((item as any).prompt) || toStringOrUndefined((item as any).question);
+              const response = toStringOrUndefined((item as any).response) || toStringOrUndefined((item as any).answer);
+              if (!prompt || !response) return null;
+              return { prompt, response };
+            })
+            .filter((entry): entry is { prompt: string; response: string } => !!entry)
+        : [];
+
+    return {
+      scenario: toStringOrUndefined(parsed.scenario),
+      interviewerPersona: toStringOrUndefined(parsed.interviewerPersona),
+      openingHook: toStringOrUndefined(parsed.openingHook),
+      keyStories: toStringArray(parsed.keyStories),
+      persuasionAngles: toStringArray(parsed.persuasionAngles),
+      objectionResponses: toStringArray(parsed.objectionResponses),
+      behaviorTips: toStringArray(parsed.behaviorTips),
+      closingStatement: toStringOrUndefined(parsed.closingStatement),
+      followUpActions: toStringArray(parsed.followUpActions),
+      sampleDialogue: toDialogue(parsed.sampleDialogue),
+    };
+  } catch {
+    return {};
+  }
+}

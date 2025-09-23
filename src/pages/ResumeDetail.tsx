@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marked } from 'marked';
 import { computeCoverageScore } from "@/lib/analysis";
-import { assessFit, coachGaps, generateInterviewPrepGuide } from "@/lib/openai";
+import { assessFit, coachGaps, generateInterviewPrepGuide, generateInterviewSimulationScript } from "@/lib/openai";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ApplicationStatus = 'applied' | 'not_applied' | 'unsuccessful' | 'successful';
@@ -23,6 +23,23 @@ type InterviewPrepRecord = {
   focusAreas?: string[];
   practiceQuestions?: string[];
   actionItems?: string[];
+};
+
+type InterviewSimulationRecord = {
+  generatedAt: string;
+  scenario?: string;
+  interviewerPersona?: string;
+  openingHook?: string;
+  keyStories?: string[];
+  persuasionAngles?: string[];
+  objectionResponses?: string[];
+  behaviorTips?: string[];
+  closingStatement?: string;
+  followUpActions?: string[];
+  sampleDialogue?: {
+    prompt: string;
+    response: string;
+  }[];
 };
 
 const ResumeDetail = () => {
@@ -47,6 +64,9 @@ const ResumeDetail = () => {
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrepRecord | null>(null);
   const [interviewPrepLoading, setInterviewPrepLoading] = useState(false);
   const [interviewPrepError, setInterviewPrepError] = useState<string | null>(null);
+  const [interviewSimulation, setInterviewSimulation] = useState<InterviewSimulationRecord | null>(null);
+  const [interviewSimulationLoading, setInterviewSimulationLoading] = useState(false);
+  const [interviewSimulationError, setInterviewSimulationError] = useState<string | null>(null);
   const [showJobDescription, setShowJobDescription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,6 +150,11 @@ const ResumeDetail = () => {
           setInterviewPrep(data.interviewPrep);
         } else {
           setInterviewPrep(null);
+        }
+        if (data.interviewSimulation) {
+          setInterviewSimulation(data.interviewSimulation);
+        } else {
+          setInterviewSimulation(null);
         }
         if (data.fit) {
           setFitScore(typeof data.fit.score === 'number' ? data.fit.score : null);
@@ -223,6 +248,7 @@ const ResumeDetail = () => {
           fit: newFit,
           coaching: (resumeData as any).coaching,
           interviewPrep: (resumeData as any).interviewPrep,
+          interviewSimulation: (resumeData as any).interviewSimulation,
           meta: { ...((resumeData as any).meta || {}), applicationStatus },
         });
 
@@ -255,6 +281,7 @@ const ResumeDetail = () => {
               fit: newFit,
               coaching: coachingResult,
               interviewPrep: (resumeData as any).interviewPrep,
+              interviewSimulation: (resumeData as any).interviewSimulation,
               meta: { ...((resumeData as any).meta || {}), applicationStatus },
             });
           } catch (e) {
@@ -298,6 +325,7 @@ const ResumeDetail = () => {
           fit: current.fit,
           coaching: current.coaching,
           interviewPrep: current.interviewPrep,
+          interviewSimulation: current.interviewSimulation,
           meta: { ...(current.meta || {}), applicationStatus: status },
         });
         updateResume(id, { updatedAt: new Date().toISOString(), applicationStatus: status });
@@ -368,6 +396,7 @@ const ResumeDetail = () => {
           fit: current.fit,
           coaching: current.coaching,
           interviewPrep: record,
+          interviewSimulation: current.interviewSimulation,
           meta: current.meta,
         });
       }
@@ -379,6 +408,77 @@ const ResumeDetail = () => {
       toast({ title: 'Interview prep failed', description: message, variant: 'destructive' });
     } finally {
       setInterviewPrepLoading(false);
+    }
+  };
+
+  const handleInterviewSimulation = async () => {
+    if (!id) return;
+    if (!settings.openAIApiKey) {
+      toast({
+        title: 'API key required',
+        description: 'Add your OpenAI API key in Settings to generate interview simulations.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!jobDescription?.trim()) {
+      toast({
+        title: 'Job description needed',
+        description: 'Provide a job description to simulate the interview scenario.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setInterviewSimulationError(null);
+    setInterviewSimulationLoading(true);
+    try {
+      const canonical = canonicalDetails || (await getPersonalDetails()) || '';
+      const script = await generateInterviewSimulationScript({
+        apiKey: settings.openAIApiKey,
+        model: settings.model,
+        jobDescription,
+        personalDetails: canonical,
+        generatedResume: markdown,
+      });
+
+      const record: InterviewSimulationRecord = {
+        generatedAt: new Date().toISOString(),
+        scenario: script.scenario,
+        interviewerPersona: script.interviewerPersona,
+        openingHook: script.openingHook,
+        keyStories: script.keyStories?.length ? script.keyStories : undefined,
+        persuasionAngles: script.persuasionAngles?.length ? script.persuasionAngles : undefined,
+        objectionResponses: script.objectionResponses?.length ? script.objectionResponses : undefined,
+        behaviorTips: script.behaviorTips?.length ? script.behaviorTips : undefined,
+        closingStatement: script.closingStatement,
+        followUpActions: script.followUpActions?.length ? script.followUpActions : undefined,
+        sampleDialogue: script.sampleDialogue?.length ? script.sampleDialogue : undefined,
+      };
+
+      setInterviewSimulation(record);
+
+      const current = await getResume(id);
+      if (current) {
+        await saveResume(id, {
+          markdown: current.markdown,
+          jdRaw: current.jdRaw,
+          derived: current.derived || { skills: [], keywords: [] },
+          fit: current.fit,
+          coaching: current.coaching,
+          interviewPrep: current.interviewPrep,
+          interviewSimulation: record,
+          meta: current.meta,
+        });
+      }
+
+      toast({ title: 'Interview simulation ready', description: 'Use the script to rehearse persuasive answers.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate interview simulation.';
+      setInterviewSimulationError(message);
+      toast({ title: 'Interview simulation failed', description: message, variant: 'destructive' });
+    } finally {
+      setInterviewSimulationLoading(false);
     }
   };
 
@@ -658,38 +758,67 @@ const ResumeDetail = () => {
               </Select>
             </div>
 
-            <div className="pt-4 border-t border-dashed border-border/70 space-y-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="pt-4 border-t border-dashed border-border/70 space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-sm font-medium">Interview preparation</div>
-                  <p className="text-xs text-muted-foreground">Generate a tailored interview guide based on this resume and job.</p>
+                  <div className="text-sm font-medium">Interview tools</div>
+                  <p className="text-xs text-muted-foreground">Generate prep guidance or rehearse the conversation before your interview.</p>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleInterviewPrep}
-                  disabled={interviewPrepLoading || !settings.openAIApiKey || !jobDescription?.trim()}
-                >
-                  {interviewPrepLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Preparing…
-                    </>
-                  ) : (
-                    'Prepare for interview'
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleInterviewPrep}
+                    disabled={interviewPrepLoading || !settings.openAIApiKey || !jobDescription?.trim()}
+                  >
+                    {interviewPrepLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Preparing…
+                      </>
+                    ) : (
+                      'Prepare for interview'
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleInterviewSimulation}
+                    disabled={
+                      interviewSimulationLoading ||
+                      !settings.openAIApiKey ||
+                      !jobDescription?.trim()
+                    }
+                  >
+                    {interviewSimulationLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Simulating…
+                      </>
+                    ) : (
+                      'Simulate interview'
+                    )}
+                  </Button>
+                </div>
               </div>
               {!settings.openAIApiKey && (
-                <p className="text-xs text-muted-foreground">Add your OpenAI API key in Settings to enable interview preparation.</p>
+                <p className="text-xs text-muted-foreground">Add your OpenAI API key in Settings to enable interview coaching.</p>
               )}
               {!jobDescription?.trim() && (
-                <p className="text-xs text-muted-foreground">Add a job description to unlock interview preparation guidance.</p>
+                <p className="text-xs text-muted-foreground">Add a job description to unlock tailored interview guidance.</p>
               )}
-              {interviewPrep && (
-                <p className="text-xs text-muted-foreground">Last generated {new Date(interviewPrep.generatedAt).toLocaleString()}</p>
-              )}
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {interviewPrep && (
+                  <p>Prep guide generated {new Date(interviewPrep.generatedAt).toLocaleString()}</p>
+                )}
+                {interviewSimulation && (
+                  <p>Simulation updated {new Date(interviewSimulation.generatedAt).toLocaleString()}</p>
+                )}
+              </div>
               {interviewPrepError && (
                 <p className="text-xs text-destructive">{interviewPrepError}</p>
+              )}
+              {interviewSimulationError && (
+                <p className="text-xs text-destructive">{interviewSimulationError}</p>
               )}
             </div>
           </CardContent>
@@ -759,6 +888,126 @@ const ResumeDetail = () => {
 
               {!interviewPrep && !interviewPrepLoading && (
                 <p className="text-xs text-muted-foreground">No interview preparation guidance available yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(interviewSimulation || interviewSimulationLoading) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Interview Simulation Script</CardTitle>
+              <CardDescription>Rehearse the conversation, objections, and closing moments.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {interviewSimulationLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {interviewSimulation ? 'Refreshing simulation…' : 'Building simulation…'}
+                </div>
+              )}
+
+              {interviewSimulation && (
+                <>
+                  {(interviewSimulation.scenario || interviewSimulation.interviewerPersona) && (
+                    <div className="space-y-1">
+                      {interviewSimulation.scenario && (
+                        <p className="text-muted-foreground"><span className="font-medium text-foreground">Scenario:</span> {interviewSimulation.scenario}</p>
+                      )}
+                      {interviewSimulation.interviewerPersona && (
+                        <p className="text-muted-foreground"><span className="font-medium text-foreground">Interviewer:</span> {interviewSimulation.interviewerPersona}</p>
+                      )}
+                    </div>
+                  )}
+                  {interviewSimulation.openingHook && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Opening Hook</div>
+                      <p className="text-muted-foreground">{interviewSimulation.openingHook}</p>
+                    </div>
+                  )}
+                  {interviewSimulation.keyStories && interviewSimulation.keyStories.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Key Stories to Highlight</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewSimulation.keyStories.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewSimulation.persuasionAngles && interviewSimulation.persuasionAngles.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Persuasion Angles</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewSimulation.persuasionAngles.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewSimulation.objectionResponses && interviewSimulation.objectionResponses.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Objection Responses</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewSimulation.objectionResponses.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewSimulation.behaviorTips && interviewSimulation.behaviorTips.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Behavioral Guidance</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewSimulation.behaviorTips.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {interviewSimulation.sampleDialogue && interviewSimulation.sampleDialogue.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="font-medium text-foreground">Sample Dialogue</div>
+                      <div className="space-y-2">
+                        {interviewSimulation.sampleDialogue.map((turn, idx) => (
+                          <div key={idx} className="rounded-md border border-border/60 p-3">
+                            <div className="text-xs font-medium uppercase text-muted-foreground">Q</div>
+                            <p className="text-foreground">{turn.prompt}</p>
+                            <div className="mt-2 text-xs font-medium uppercase text-muted-foreground">A</div>
+                            <p className="text-foreground">{turn.response}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {interviewSimulation.closingStatement && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Closing Statement</div>
+                      <p className="text-muted-foreground">{interviewSimulation.closingStatement}</p>
+                    </div>
+                  )}
+                  {interviewSimulation.followUpActions && interviewSimulation.followUpActions.length > 0 && (
+                    <div>
+                      <div className="font-medium text-foreground mb-1">Follow-up Actions</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {interviewSimulation.followUpActions.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Generated {new Date(interviewSimulation.generatedAt).toLocaleString()}
+                  </p>
+                </>
+              )}
+
+              {!interviewSimulation && interviewSimulationLoading && (
+                <p className="text-xs text-muted-foreground">Assembling the interview scenario…</p>
+              )}
+
+              {!interviewSimulation && !interviewSimulationLoading && (
+                <p className="text-xs text-muted-foreground">No interview simulation script available yet.</p>
               )}
             </CardContent>
           </Card>
